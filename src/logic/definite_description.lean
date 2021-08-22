@@ -1,13 +1,7 @@
+import logic.idecidable
 
 --- Statement of definite description
 axiom definite_description {α : Type*} {p : α → Prop} : (∃! (a : α), p a) → {a:α // p a}
-
---- An "internal" version of decidability.
-class idecidable (p : Prop) : Prop :=
-  (is_either : p ∨ ¬ p)
-
-lemma whether (p : Prop) [idec : idecidable p] : p ∨ ¬ p :=
-  idec.is_either
 
 namespace unsafe
 

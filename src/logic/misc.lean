@@ -19,3 +19,67 @@ definition ite_eval_false {p : Prop} [pdec : decidable p] {α : Type*} : (¬p) �
     case is_true { contradiction }
   end
 
+definition xor_congr {p q p' q' : Prop} : (p ↔ p') → (q ↔ q') → (xor p q ↔ xor p' q') :=
+  begin
+    intros hp hq,
+    have hnp : ¬p ↔ ¬p', from not_congr hp,
+    have hnq : ¬q ↔ ¬q', from not_congr hq,
+    apply or_congr; apply and_congr; try { assumption },
+  end
+
+#print axioms xor_congr
+
+definition xor_self (p : Prop) : xor p p ↔ false :=
+  begin
+    split; intros h; try { contradiction },
+    apply or.elim h; try { exact (and_not_self p).mp }
+  end
+
+#print axioms xor_self
+
+definition xor_comm (p q : Prop) : xor p q ↔ xor q p :=
+  begin
+    dunfold xor,
+    exact or.comm,
+  end
+
+definition false_xor (p : Prop) : xor false p ↔ p :=
+  begin
+    split,
+    show xor false p → p, {
+      dunfold xor; intro h; apply or.elim h,
+      exact (false.elim ∘ and.left),
+      exact and.left
+    },
+    show p → xor false p, {
+      dunfold xor; intro h,
+      right,
+      exact ⟨h, false.elim⟩
+    }
+  end
+
+definition xor_false (p : Prop) : xor p false ↔ p :=
+  by calc
+    xor p false
+        ↔ xor false p : xor_comm p false
+    ... ↔ p : false_xor p
+
+#print axioms false_xor
+#print axioms xor_false
+
+#check or_assoc
+
+lemma not_or_distrib {p q : Prop} : ¬(p∨q) ↔ (¬p)∧(¬q) :=
+  begin
+    constructor,
+    show ¬(p∨ q) → (¬p)∧(¬q), {
+      intros hpq,
+      split,
+      show ¬p, { intros hp, have : p∨ q, by left; assumption, contradiction },
+      show ¬q, { intros hq, have : p∨ q, by right; assumption, contradiction },
+    },
+    show (¬p)∧(¬q) → ¬(p∨ q), {
+      intros hnpq hpq,
+      exact or.elim hpq hnpq.left hnpq.right
+    },
+  end

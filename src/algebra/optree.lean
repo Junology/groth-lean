@@ -8,6 +8,10 @@ inductive optree (op : ℕ → Type u) (α : Type v) : Type.{max u v}
 | varleaf {} (a : α) : optree
 | opnode {n : ℕ} (f : op n) : vect optree n → optree
 
+notation `⦃`:1024 f ` | ` t:(foldr `, ` (e r, vect.cons e r) vect.nil `⦄`) := optree.opnode f t
+
+prefix `◎`:100 := optree.varleaf
+
 namespace optree
 
 /-**********************************-

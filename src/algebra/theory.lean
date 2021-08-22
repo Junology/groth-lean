@@ -19,6 +19,9 @@ class premodel (th : theory) (α : Type u) : Type u :=
 class model (th : theory) (α : Type u) extends premodel th α : Type u:=
   mk :: (haxiom : ∀ {n : ℕ} (r : th.rel n) (var : finord n → α), (th.rel_lhs r).elim @act var = (th.rel_rhs r).elim @act var)
 
+instance model_is_premodel(th : theory) (α : Type _) [ha : model th α] : premodel th α := ha.to_premodel
+
+
 namespace premodel
 
 definition action (th : theory) (α : Type _) [premodel th α] : Π {n : ℕ}, th.op n → vect α n → α := @premodel.act th α _

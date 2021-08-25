@@ -20,6 +20,15 @@ definition map {α : Type*} {β : Type*} : Π {n : ℕ}, (α → β) → vect α
 | _ f nil := nil
 | _ f (cons x xs) := cons (f x) (map f xs)
 
+--- Folding to left
+definition foldl {α β : Type*} : Π {n : ℕ} (f : α → β → α), α → vect β n → α
+| _ f a vect.nil := a
+| _ f a (cons x xs) := foldl f (f a x) xs
+
+--- Folding to right
+definition foldr {α β : Type*} : Π {n : ℕ} (f : α → β → β), β → vect α n → β :=
+  λ n f b xs, @foldl (β → β) α _ (λ g a, f a ∘ g) id xs b
+
 -- Zipping pairs of entries
 definition zip {α : Type*} {β : Type*} : Π {n : ℕ}, vect α n → vect β n → vect (α×β) n
 | _ vect.nil vect.nil := vect.nil

@@ -1,8 +1,20 @@
+/-
+**
+** The algebraic theory of F2-vector spaces.
+**
+-/
+
+import data.bool.partial
+import data.bool.misc
+
 import algebra.theory
 import algebra.free_model
 
 import logic.misc
 
+/-
+ * Basic operations and relations
+-/
 namespace binary_module
 
 inductive ops : ℕ → Type
@@ -16,97 +28,382 @@ inductive rels : ℕ → Type
 | add_comm : rels 2
 | add_assoc : rels 3
 
-open optree
-
-definition rel_lhs : ∀ n, rels n → optree ops (finord n)
-| _ rels.left_zero := ⦃ops.add | ⦃ops.zero|⦄, ◎finord.fz⦄
-| _ rels.right_zero := ⦃ops.add | ◎finord.fz, ⦃ops.zero|⦄⦄
-| _ rels.add_self := ⦃ops.add | ◎finord.fz, ◎finord.fz⦄
-| _ rels.add_comm := ⦃ops.add | ◎finord.fz, ◎finord.fz.fs⦄
-| _ rels.add_assoc := ⦃ops.add | ⦃ops.add | ◎finord.fz, ◎finord.fz.fs⦄, ◎finord.fz.fs.fs⦄
-
-definition rel_rhs : ∀ n, rels n → optree ops (finord n)
-| _ rels.left_zero := ◎finord.fz
-| _ rels.right_zero := ◎finord.fz
-| _ rels.add_self := ⦃ops.zero|⦄
-| _ rels.add_comm := ⦃ops.add | ◎finord.fz.fs, ◎finord.fz⦄
-| _ rels.add_assoc := ⦃ops.add | ◎finord.fz, ⦃ops.add | ◎finord.fz.fs, ◎finord.fz.fs.fs⦄⦄
-
 end binary_module
 
+--- The theory of F2-vector spaces
+@[reducible]
 definition binary_module : theory :=
 {
   op := binary_module.ops,
   rel := binary_module.rels,
-  rel_lhs := binary_module.rel_lhs,
-  rel_rhs := binary_module.rel_rhs
+  rel_lhs :=
+    @binary_module.rels.rec (λ n _, optree binary_module.ops (finord n))
+      ⦃binary_module.ops.add | ⦃binary_module.ops.zero|⦄, ◎finord.fz⦄
+      ⦃binary_module.ops.add | ◎finord.fz, ⦃binary_module.ops.zero|⦄⦄
+      ⦃binary_module.ops.add | ◎finord.fz, ◎finord.fz⦄
+      ⦃binary_module.ops.add | ◎finord.fz, ◎finord.fz.fs⦄
+      ⦃binary_module.ops.add | ⦃binary_module.ops.add | ◎finord.fz, ◎finord.fz.fs⦄,◎finord.fz.fs.fs⦄,
+  rel_rhs :=
+    @binary_module.rels.rec (λ n _, optree binary_module.ops (finord n))
+      (◎finord.fz)
+      (◎finord.fz)
+      ⦃binary_module.ops.zero|⦄
+      ⦃binary_module.ops.add | ◎finord.fz.fs, ◎finord.fz⦄
+      ⦃binary_module.ops.add | ◎finord.fz, ⦃binary_module.ops.add | ◎finord.fz.fs, ◎finord.fz.fs.fs⦄⦄
 }
 
-definition Ω_dec := {p // is_binary p}
 
-instance omega_idecidable (p : Ω_dec) : idecidable p.val :=
-  {is_either := p.property}
+/-
+ * Primitive operations and propositions on F2-vector spaces
+-/
+namespace binary_module
 
-definition omega_xor_act : ∀ n, binary_module.op n → vect Ω_dec n → Ω_dec
-| _ binary_module.ops.zero vect.nil := ⟨false, or.inr false.elim⟩
-| _ binary_module.ops.add (vect.cons p (vect.cons q _)) :=
-  ⟨xor p.val q.val, xor_binary p.property q.property⟩
+@[reducible]
+protected
+definition zero (α : Type _) [hpm : premodel binary_module α] : α :=
+  @premodel.act binary_module α hpm _ binary_module.ops.zero vect.nil
 
-#print axioms omega_xor_act
+@[reducible]
+protected
+definition add {α : Type _} [hm : premodel binary_module α] : α → α → α :=
+  λ a b, @premodel.act binary_module α hm _ binary_module.ops.add (vect.cons a (vect.cons b vect.nil))
 
-definition omega_xor : model binary_module {p // p ∨ ¬p} :=
+@[simp]
+lemma zero_add {α : Type _} [model binary_module α] : ∀ a, binary_module.add (binary_module.zero α) a = a :=
+  begin
+    intro a,
+    let h := model.axiom_eq binary_module α binary_module.rels.left_zero (λ _,a),
+    dsimp [binary_module] at h,
+    repeat { unfold optree.elim at h; try {unfold optree.elim_aux at h} },
+    dunfold binary_module.add,
+    dunfold binary_module.zero,
+    assumption
+  end
+
+@[simp]
+lemma add_zero {α : Type _} [model binary_module α] : ∀ a, binary_module.add a (binary_module.zero α) = a :=
+  begin
+    intro a,
+    let h := model.axiom_eq binary_module α binary_module.rels.right_zero (λ _,a),
+    dsimp [binary_module] at h,
+    repeat { unfold optree.elim at h; try {unfold optree.elim_aux at h} },
+    dunfold binary_module.add,
+    dunfold binary_module.zero,
+    assumption
+  end
+
+@[simp]
+lemma add_self {α : Type _} [model binary_module α] : ∀ a, binary_module.add a a = binary_module.zero α :=
+  begin
+    intro a,
+    let h := model.axiom_eq binary_module α binary_module.rels.add_self (λ_,a),
+    dsimp [binary_module] at h,
+    repeat { unfold optree.elim at h; try {unfold optree.elim_aux at h} },
+    dunfold binary_module.add,
+    dunfold binary_module.zero,
+    assumption
+  end
+
+end binary_module
+
+
+/-
+ * F2-vector space structure on `bool`
+-/
+
+attribute [instance,reducible]
+definition bool_bxor : model binary_module bool :=
 {
-  act := omega_xor_act,
+  act := λ n f, vect.foldl bxor ff,--bool_bxor_act,
   haxiom :=
     begin
       intros,
       cases r,
-      case left_zero {
+      case binary_module.rels.left_zero {
         dsimp [binary_module],
-        dsimp [binary_module.rel_lhs,binary_module.rel_rhs],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
-        unfold omega_xor_act,
-        apply subtype.eq; unfold subtype.val,
-        exact propext (false_xor _),
+        dunfold vect.foldl,
+        exact ff_bxor _,
       },
-      case right_zero {
+      case binary_module.rels.right_zero {
         dsimp [binary_module],
-        dsimp [binary_module.rel_lhs,binary_module.rel_rhs],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
-        unfold omega_xor_act,
-        apply subtype.eq; unfold subtype.val,
-        exact propext (xor_false _)
+        dunfold vect.foldl,
+        rw [bxor_ff, ff_bxor]
       },
-      case add_self {
-        dsimp [binary_module,binary_module.rel_lhs,binary_module.rel_rhs],
-        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
-        unfold omega_xor_act,
-        apply subtype.eq; unfold subtype.val,
-        exact propext (xor_self _)
-      },
-      case add_comm {
+      case binary_module.rels.add_self {
         dsimp [binary_module],
-        delta binary_module.rel_lhs,
-        delta binary_module.rel_rhs,
-        dsimp *,
-        delta id_rhs,
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
-        unfold omega_xor_act,
-        apply subtype.eq; unfold subtype.val,
-        exact propext (xor_comm _ _)
+        unfold vect.foldl,
+        rw [ff_bxor],
+        exact bxor_self _
       },
-      case add_assoc {
+      case binary_module.rels.add_comm {
         dsimp [binary_module],
-        delta binary_module.rel_lhs,
-        delta binary_module.rel_rhs,
-        dsimp *,
-        delta id_rhs,
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
-        unfold omega_xor_act,
-        apply subtype.eq; unfold subtype.val,
-        exact propext (xor_assoc _ _ _)
+        unfold vect.foldl,
+        rw [ff_bxor,ff_bxor],
+        exact bxor_comm _ _
+      },
+      case binary_module.rels.add_assoc {
+        dsimp [binary_module],
+        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
+        unfold vect.foldl,
+        repeat {rw [ff_bxor]},
+        exact bxor_assoc _ _ _
+      },
+    end
+}
+
+namespace binary_module
+
+definition generate {α : Type _} [model binary_module α] (a : α) : morphism binary_module bool α :=
+{
+  to_fun := @bool.rec (λ_, α) (binary_module.zero α) a,
+  hact :=
+    begin
+      intros n f as,
+      cases f,
+      case binary_module.ops.zero {
+        cases as,
+        dsimp [premodel.act,vect.map,vect.foldl],
+        unfold binary_module.zero,
+      },
+      case binary_module.ops.add {
+        cases as with _ x bs; cases bs with _ y cs; cases cs,
+        dsimp [premodel.act],
+        cases x,
+        case bool.ff {
+          cases y,
+          case bool.ff {
+            let h := binary_module.add_zero (binary_module.zero α),
+            unfold binary_module.add at h,
+            have : (vect.foldl bxor ff (vect.cons ff (vect.cons ff vect.nil)))=ff,
+              by refl,
+            rw [this]; dsimp at *,
+            unfold vect.map,
+            rw [h],
+          },
+          case bool.tt {
+            let h := binary_module.zero_add a,
+            unfold binary_module.add at h,
+            have : (vect.foldl bxor ff (vect.cons ff (vect.cons tt vect.nil)))=tt,
+              by refl,
+            rw [this]; dsimp at *,
+            unfold vect.map,
+            rw [h]
+          }
+        },
+        case bool.tt {
+          cases y,
+          case bool.ff {
+            let h := binary_module.add_zero a,
+            unfold binary_module.add at h,
+            have : (vect.foldl bxor ff (vect.cons tt (vect.cons ff vect.nil)))=tt,
+              by refl,
+            rw [this]; dsimp *,
+            unfold vect.map,
+            rw [h]
+          },
+          case bool.tt {
+            let h := binary_module.add_self a,
+            unfold binary_module.add at h,
+            have : (vect.foldl bxor ff (vect.cons tt (vect.cons tt vect.nil)))=ff,
+              by refl,
+            rw [this]; dsimp *,
+            unfold vect.map,
+            rw [h]
+          }
+        },
       }
     end
 }
 
-#print axioms omega_xor
+#print axioms binary_module.generate
+
+theorem bool_free : is_free binary_module (function.const unit tt) :=
+  begin
+    dunfold is_free,
+    intros γ hmc f,
+    existsi @generate _ hmc (f ()),
+    split; dsimp *,
+    focus {
+      intro a; cases a,
+      unfold generate
+    },
+    focus {
+      intros g hy,
+      cases g,
+      unfold generate,
+      simp * at *,
+      unfold function.const at hy,
+      apply funext,
+      intros b,
+      cases b,
+      case bool.ff {
+        let h := g_hact binary_module.ops.zero vect.nil,
+        unfold premodel.act at h,
+        unfold vect.foldl at h,
+        dsimp * at *,
+        rw [h],
+        refl
+      },
+      case bool.tt {
+        dsimp *,
+        rw [hy]
+      },
+    }
+  end
+
+#print axioms binary_module.bool_free
+
+end binary_module
+
+@[instance]
+definition bool_p_bxor (p : Prop) : model binary_module (bool_p p) :=
+{
+  act := λ n f, vect.foldl bxor_p (ff_p p),--bool_p_bxor_act p,
+  haxiom :=
+    begin
+      intros n r var,
+      cases r,
+      case binary_module.rels.left_zero {
+        dsimp [binary_module],
+        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
+        dunfold vect.foldl,
+        exact ff_bxor_p _
+      },
+      case binary_module.rels.right_zero {
+        dsimp [binary_module],
+        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
+        dunfold vect.foldl,
+        rw [bxor_p_ff,ff_bxor_p],
+      },
+      case binary_module.rels.add_self {
+        dsimp [binary_module],
+        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
+        dunfold vect.foldl,
+        rw [ff_bxor_p,bxor_p_self]
+      },
+      case binary_module.rels.add_comm {
+        dsimp [binary_module],
+        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
+        dunfold vect.foldl,
+        csimp only [ff_bxor_p,bxor_p_comm]
+      },
+      case binary_module.rels.add_assoc {
+        dsimp [binary_module],
+        repeat { unfold optree.elim; try {unfold optree.elim_aux} },
+        dunfold vect.foldl,
+        csimp only [ff_bxor_p,bxor_p_assoc]
+      },
+    end
+}
+
+namespace binary_module
+
+@[reducible]
+definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p → α) : morphism binary_module (bool_p p) α :=
+{
+  to_fun := λ x, @subtype.rec_on _ _ (λ_, α) x (λ b, @bool.cases_on (λ b, p∨b=ff → α) b (λ_, binary_module.zero α) (λ h, a (or.elim h id (λ h, by injection h)))),
+  hact :=
+    begin
+      intros n f as,
+      dsimp *,
+      cases f,
+      case binary_module.ops.zero {
+        cases as,
+        dsimp [premodel.act,vect.map,vect.foldl],
+        unfold binary_module.zero,
+      },
+      case binary_module.ops.add {
+        cases as with _ x bs; cases bs with _ y cs; cases cs,
+        dsimp [premodel.act],
+        cases x; cases x_val,
+        case bool.ff {
+          cases y; cases y_val,
+          case bool.ff {
+            let h := binary_module.add_zero (binary_module.zero α),
+            unfold binary_module.add at h,
+            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨ff, x_property⟩ (vect.cons ⟨ff, y_property⟩ vect.nil)) = ff_p p,
+              by refl,
+            rw [this],
+            unfold vect.map,
+            rw [h],
+          },
+          case bool.tt {
+            have : p, from or.elim y_property id (λ h, by injection h),
+            let h := binary_module.zero_add (a this),
+            unfold binary_module.add at h,
+            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨ff, x_property⟩ (vect.cons ⟨tt, y_property⟩ vect.nil)) = tt_p (y_property.elim id (λ x, by injection x)),
+              by refl,
+            rw [this],
+            unfold vect.map,
+            rw [h],
+          }
+        },
+        case bool.tt {
+          cases y; cases y_val,
+          case bool.ff {
+            have : p, from or.elim x_property id (λ h, by injection h),
+            let h := binary_module.add_zero (a this),
+            unfold binary_module.add at h,
+            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨tt, x_property⟩ (vect.cons ⟨ff, y_property⟩ vect.nil)) = tt_p (x_property.elim id (λ x, by injection x)),
+              by refl,
+            rw [this],
+            unfold vect.map,
+            rw [h]
+          },
+          case bool.tt {
+            have : p, from or.elim x_property id (λ h, by injection h),
+            let h := binary_module.add_self (a this),
+            unfold binary_module.add at h,
+            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨tt, x_property⟩ (vect.cons ⟨tt, y_property⟩ vect.nil)) = ff_p p,
+              by refl,
+            rw [this],
+            unfold vect.map,
+            rw [h]
+          }
+        }
+      }
+    end
+}
+
+#print axioms generate_p
+
+theorem bool_p_free (p : Prop) : is_free binary_module (@tt_p p) :=
+  begin
+    intros γ mc f,
+    existsi @generate_p _ _ mc f,
+    split; dsimp *,
+    focus {
+      intro; refl
+    },
+    focus {
+      intros g hg,
+      cases g,
+      unfold generate_p,
+      simp *,
+      apply funext,
+      intros x,
+      cases x,
+      cases x_val,
+      case bool.ff {
+        dsimp * at *,
+        let h := g_hact binary_module.ops.zero vect.nil,
+        dsimp [premodel.act,vect.foldl] at h,
+        rw [h],
+        refl
+      },
+      case bool.tt {
+        dsimp * at *,
+        have : p,
+          from x_property.elim id (λ h, by injection h),
+        exact hg this
+      },
+    }
+  end
+
+#print axioms bool_p_free
+
+end binary_module

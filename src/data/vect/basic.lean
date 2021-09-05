@@ -15,6 +15,11 @@ definition head {α : Type*} : Π {n : ℕ}, vect α (n+1) → α
 definition tail {α : Type*} : Π {n : ℕ}, vect α (n+1) → vect α n
 | _ (vect.cons _ xs) := xs
 
+--- Repeating an element
+definition repeat {α : Type _} (a : α) : Π n, vect α n
+| 0 := vect.nil
+| (n+1) := vect.cons a (repeat n)
+
 -- Functor
 definition map {α : Type*} {β : Type*} : Π {n : ℕ}, (α → β) → vect α n → vect β n
 | _ f nil := nil
@@ -80,6 +85,11 @@ definition from_list {α : Type*} : Π (ls : list α), vect α (ls.length)
  -  Properties
  - *******************-/
 
+--- `map` of `repeat` equals `repeat` of values.
+theorem map_repeat {α β : Type _} {f : α → β} {a : α} : ∀ {n : ℕ}, map f (repeat a n) = repeat (f a) n
+| 0 := rfl
+| (n+1) := by dsimp [repeat,vect.map]; rw [map_repeat]
+
 -- map of compositions give rise to compositions of maps
 theorem map_comp {α β γ: Type*} {f : α → β} {g : β → γ} : ∀ {n : ℕ} {t : vect α n}, map (g∘ f) t = map g (map f t)
 | _ vect.nil := rfl
@@ -94,6 +104,16 @@ theorem map_id {α : Type*} : ∀ {n : ℕ} {t : vect α n}, map id t = t
 theorem map_funext {α β : Type*} {f g : α → β} : (∀ a, f a = g a) → ∀ {n : ℕ} {t : vect α n}, map f t = map g t
 | h _ vect.nil := rfl
 | h _ (vect.cons x xs) := by unfold map; rw [h,map_funext h]
+
+--- fst of unzip is map fst
+theorem unzip_fst_is_map_fst {α β : Type _} : ∀ {n : ℕ} {vab : vect (α×β) n}, (unzip vab).fst = map prod.fst vab
+| _ vect.nil := rfl
+| _ (vect.cons ab abs) := by dsimp [unzip,map]; rw [unzip_fst_is_map_fst]
+
+--- snd of unzip is map fst
+theorem unzip_snd_is_map_snd {α β : Type _} : ∀ {n : ℕ} {vab : vect (α×β) n}, (unzip vab).snd = map prod.snd vab
+| _ vect.nil := rfl
+| _ (vect.cons ab abs) := by dsimp [unzip,map]; rw [unzip_snd_is_map_snd]
 
 -- vector of image is image of map
 theorem image {α β : Type*} {f : α → β} : ∀ {n : ℕ} (t : vect {b // ∃ a, f a = b} n), ∃ (v : vect α n), map f v = map subtype.val t

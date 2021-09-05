@@ -1,0 +1,72 @@
+import .basic
+
+namespace premodel
+
+-- `optree` defines an (initial) premodel
+instance tree_premodel (th : theory) (α : Type*) : premodel th (optree th.op α) :=
+  {
+    act := @optree.opnode th.op α
+  }
+
+end premodel
+
+
+namespace morphism
+
+-- maps into premodels give rise to morphisms out of trees
+definition treelift (th : theory) {α β: Type*} [premodel th β] (f : α → β) : morphism th (optree th.op α) β :=
+  {
+    to_fun := optree.elim (@premodel.act th β _) f,
+    hact :=
+      begin
+        intros n k ts,
+        unfold premodel.act,
+        rw [optree.elim_opnode]
+      end
+  }
+
+#print axioms treelift
+
+-- Computation rule for treelift; treelift preserves the original map
+theorem treelift_comp {th : theory} {α β: Type*} [premodel th β] (f : α → β) : ∀ {a : α}, (treelift th f).to_fun (optree.varleaf a) = f a :=
+  begin
+    intros,
+    dsimp [treelift],
+    exact optree.elim_varleaf
+  end
+
+#print axioms treelift_comp
+
+-- The embedding into a treemodel is "epimorphic"
+mutual theorem tree_unique, tree_unique_aux {th : theory} {α β : Type*} [premodel th β] {f g : morphism th (optree th.op α) β} (h : ∀ a, f.to_fun (optree.varleaf a) = g.to_fun (optree.varleaf a))
+with tree_unique : ∀ {t : optree th.op α}, f.to_fun t = g.to_fun t
+| (optree.varleaf a) := h a
+| (optree.opnode k vect.nil) :=
+  begin
+    have : (optree.opnode k vect.nil) = (@premodel.act th (optree th.op α) _ 0 k) vect.nil,
+      by unfold premodel.act; refl,
+    rw [this],
+    rw [f.hact,g.hact],
+    unfold vect.map
+  end
+| (optree.opnode k (vect.cons t ts)) :=
+  begin
+    have : ∀ t, (optree.opnode k t) = (@premodel.act th (optree th.op α) _ _ k) t,
+      from λ_, rfl,
+    rw [this],
+    rw [f.hact,g.hact],
+    unfold vect.map,
+    rw [tree_unique, tree_unique_aux]
+  end
+with tree_unique_aux : ∀ {n : ℕ} {ts : vect (optree th.op α) n}, vect.map f.to_fun ts = vect.map g.to_fun ts
+| _ vect.nil := by unfold vect.map; refl
+| _ (vect.cons t ts) :=
+  begin
+    unfold vect.map,
+    rw [tree_unique, tree_unique_aux],
+    try {split; refl}
+  end
+
+#print axioms tree_unique
+
+end morphism

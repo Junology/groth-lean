@@ -26,70 +26,28 @@ namespace premodel
 
 definition action (th : theory) (α : Type _) [premodel th α] : Π {n : ℕ}, th.op n → vect α n → α := @premodel.act th α _
 
--- Product of two premodels
-definition prod {th : theory} (α β : Type _) [premodel th α] [premodel th β] : premodel th (α×β):=
-  {
-    act :=
-      λ (n : ℕ) (f : th.op n), prod.map (premodel.act f) (premodel.act f) ∘ vect.unzip
-  }
-
-attribute [instance] premodel.prod
-
--- Product of families of premodels
-definition pi {th : theory} {α : Type*} (M : α → Type _) [∀ a, premodel th (M a)] : premodel th (Π a, M a) :=
-  {
-    act :=
-      λ n f xs, λ a,
-        premodel.act f (xs.unzip_fam a)
-  }
-
-attribute [instance] premodel.pi
-
--- optree
-instance tree_model (th : theory) (α : Type*) : premodel th (optree th.op α) :=
-  {
-    act := @optree.opnode th.op α
-  }
-
 end premodel
+
 
 namespace model
 
 definition axiom_eq (th : theory) (α : Type _) [model th α] : ∀ {n : ℕ} (r : th.rel n) (var : finord n → α), (th.rel_lhs r).elim (@premodel.act th α _) var = (th.rel_rhs r).elim (@premodel.act th α _) var := @model.haxiom th α _
 
--- Product of two models is a model
-definition prod {th : theory} (α β : Type _) [model th α] [model th β] : model th (α×β) :=
-  {
-    haxiom :=
-      begin
-        intros,
-        unfold premodel.act,
-        rw [optree.elim_prod,optree.elim_prod],
-        rw [axiom_eq,axiom_eq]
-      end
-  }
+--- Trivial model; `unit` is always a model of any algebraic theory.
+instance triv (th : theory) : model th unit :=
+{
+  act := λ _ _ _, (),
+  haxiom :=
+    begin
+      intros,
+      dsimp [premodel.act],
+      have : ∀ {x y: unit}, x=y,
+        by intros  x y; cases x; cases y; refl,
+      exact this
+    end
+}
 
-#print axioms model.prod
-
--- Product of families of models is a model
--- WARNING: This requires function extensionality
-definition pi {th : theory} {α : Type _} {C : α → Type _} [∀ a, model th (C a)] : model th (Π a, C a):=
-  {
-    haxiom :=
-      begin
-        intros,
-        apply funext,
-        intro a,
-        unfold premodel.act at *; dsimp *,
-        let dact : Π (a : α) {k : ℕ}, th.op k → vect (C a) k → (C a) := λ a k f rs , premodel.act f rs,
-        let dvar : Π (a : α), finord n → (C a) := λ k a, var a k,
-        rw [@optree.elim_pi th.op _ α C dact dvar _ a],
-        rw [@optree.elim_pi th.op _ α C dact dvar _ a],
-        rw [axiom_eq]
-      end
-  }
-
-#print axioms model.pi
+#print axioms model.triv
 
 end model
 
@@ -98,8 +56,11 @@ end model
  - Morphisms of pre-models
  -*****************************-/
 
+@[reducible]
+definition is_morphism (th : theory) {α : Type u} {β : Type v} [premodel th α] [premodel th β] (f : α → β) : Prop := ∀ {n : ℕ} (μ : th.op n) (as : vect α n), f (@premodel.act th α _ _ μ as) = (@premodel.act th β _ _ μ (as.map f))
+
 structure morphism (th : theory) (α : Type u) (β : Type v) [premodel th α] [premodel th β] : Type.{max u v+1}:=
-  mk :: (to_fun : α → β) (hact : ∀ {n : ℕ} (f : th.op n) (as : vect α n), to_fun (@premodel.act th α _ _ f as) = (@premodel.act th β _ _ f (as.map to_fun)))
+  mk :: (to_fun : α → β) (hact : is_morphism th to_fun)
 
 namespace morphism
 
@@ -116,7 +77,7 @@ attribute [instance] morphism.coe_to_fun
 definition id {th : theory} {α : Type _} [premodel th α] : morphism th α α :=
   {
     to_fun := id,
-    hact := by intros; rw [vect.map_id]; refl
+    hact := by intros n u as; rw [vect.map_id]; refl
   }
 
 -- the composition of morphisms
@@ -134,62 +95,6 @@ definition comp {th : theory} {α β γ : Type _} [premodel th α] [premodel th 
     }
 
 #print axioms morphism.comp
-
--- maps into premodels give rise to morphisms out of trees
-definition treelift (th : theory) {α β: Type*} [premodel th β] (f : α → β) : morphism th (optree th.op α) β :=
-  {
-    to_fun := optree.elim (@premodel.act th β _) f,
-    hact :=
-      begin
-        intros n k ts,
-        unfold premodel.act,
-        rw [optree.elim_opnode]
-      end
-  }
-
-#print axioms treelift
-
--- treelift preserves the original map
-theorem treelift_comp {th : theory} {α β: Type*} [premodel th β] (f : α → β) : ∀ {a : α}, (treelift th f).to_fun (optree.varleaf a) = f a :=
-  begin
-    intros,
-    dsimp [treelift],
-    exact optree.elim_varleaf
-  end
-
-#print axioms treelift_comp
-
--- The embedding into a treemodel is "epimorphic"
-mutual theorem tree_unique, tree_unique_aux {th : theory} {α β : Type*} [premodel th β] {f g : morphism th (optree th.op α) β} (h : ∀ a, f.to_fun (optree.varleaf a) = g.to_fun (optree.varleaf a))
-with tree_unique : ∀ {t : optree th.op α}, f.to_fun t = g.to_fun t
-| (optree.varleaf a) := h a
-| (optree.opnode k vect.nil) :=
-  begin
-    have : (optree.opnode k vect.nil) = (@premodel.act th (optree th.op α) _ 0 k) vect.nil,
-      by unfold premodel.act; refl,
-    rw [this],
-    rw [f.hact,g.hact],
-    unfold vect.map
-  end
-| (optree.opnode k (vect.cons t ts)) :=
-  begin
-    have : ∀ t, (optree.opnode k t) = (@premodel.act th (optree th.op α) _ _ k) t,
-      from λ_, rfl,
-    rw [this],
-    rw [f.hact,g.hact],
-    unfold vect.map,
-    rw [tree_unique, tree_unique_aux]
-  end
-with tree_unique_aux : ∀ {n : ℕ} {ts : vect (optree th.op α) n}, vect.map f.to_fun ts = vect.map g.to_fun ts
-| _ vect.nil := by unfold vect.map; refl
-| _ (vect.cons t ts) :=
-  begin
-    unfold vect.map,
-    rw [tree_unique, tree_unique_aux],
-    try {split; refl}
-  end
-
-#print axioms tree_unique
 
 -- Two morphisms equal to each other as soon as their underlying maps do
 theorem morphism_eq {th : theory} {α β : Type _} [premodel th α] [premodel th β] {f g : morphism th α β} : f.to_fun = g.to_fun → f = g :=

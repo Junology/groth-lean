@@ -92,5 +92,55 @@ lemma add_self {α : Type _} [model binary_module α] : ∀ a, binary_module.add
     assumption
   end
 
+--- The constant map at `zero` yields a morphism of binary modules.
+definition zero_morphism (α β : Type _) [model binary_module α] [model binary_module β] : morphism binary_module α β :=
+{
+  to_fun := λ _, binary_module.zero β,
+  hact :=
+    begin
+      intros n μ as,
+      rw [vect.map_const],
+      dsimp *,
+      cases μ,
+      case binary_module.ops.zero {
+        dsimp [vect.repeat],
+        refl
+      },
+      case binary_module.ops.add {
+        dunfold vect.repeat,
+        have : ∀ (b : β), vect.repeat b ((1 : ℕ).add 0) = vect.cons b vect.nil := λ _,rfl,
+        rw [this],
+        let hz := @zero_add β _,
+        dunfold binary_module.add at hz,
+        rw [hz],
+      }
+    end
+}
+
+--- The trivial binary_module is an initial model.
+definition unit_is_initial : model.is_initial binary_module unit :=
+{
+  elim := λ β hb, @zero_morphism unit β _ hb,
+  hunique :=
+    begin
+      intros β mb g a,
+      cases g,
+      cases a,
+      dsimp [zero_morphism],
+      have : punit.star = @premodel.act binary_module unit _ 0 binary_module.ops.zero vect.nil := rfl,
+      rw [this,g_hact],
+      refl
+    end
+}
+
+#print axioms unit_is_initial
+
+--- The theory `binary_module` has a trivial initial model.
+instance : model.has_trivial_init binary_module :=
+{
+  init_unit := binary_module.unit_is_initial
+}
+
+
 end binary_module
 

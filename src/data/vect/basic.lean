@@ -18,7 +18,7 @@ definition tail {α : Type*} : Π {n : ℕ}, vect α (n+1) → vect α n
 --- Repeating an element
 definition repeat {α : Type _} (a : α) : Π n, vect α n
 | 0 := vect.nil
-| (n+1) := vect.cons a (repeat n)
+| (nat.succ n) := vect.cons a (repeat n)
 
 -- Functor
 definition map {α : Type*} {β : Type*} : Π {n : ℕ}, (α → β) → vect α n → vect β n
@@ -89,6 +89,11 @@ definition from_list {α : Type*} : Π (ls : list α), vect α (ls.length)
 theorem map_repeat {α β : Type _} {f : α → β} {a : α} : ∀ {n : ℕ}, map f (repeat a n) = repeat (f a) n
 | 0 := rfl
 | (n+1) := by dsimp [repeat,vect.map]; rw [map_repeat]
+
+--- `map f` with `f` being a constant function is nothing but repeat
+theorem map_const {α β : Type _} (b : β) : ∀ {n : ℕ} {as : vect α n}, map (λ _,b) as = repeat b n
+| 0 vect.nil := rfl
+| (n+1) (vect.cons a as) := by intros; dsimp [map,repeat]; rw [map_const]
 
 -- map of compositions give rise to compositions of maps
 theorem map_comp {α β γ: Type*} {f : α → β} {g : β → γ} : ∀ {n : ℕ} {t : vect α n}, map (g∘ f) t = map g (map f t)

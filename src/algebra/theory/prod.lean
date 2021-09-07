@@ -65,16 +65,10 @@ definition snd_is_morphism {th : theory} {α β : Type _} [premodel th α] [prem
 
 --- the morphism that projects the first component of products.
 definition proj_fst (th : theory) {α β : Type*} [premodel th α] [premodel th β] : morphism th (α×β) α :=
-{
-  to_fun := @prod.fst α β,
-  hact := @fst_is_morphism th α β _ _
-}
+  ⟨@prod.fst α β, @fst_is_morphism th α β _ _⟩
 
 --- the morphism that projects the second component of products.
 definition proj_snd (th : theory) {α β : Type*} [premodel th α] [premodel th β] : morphism th (α×β) β :=
-{
-  to_fun := @prod.snd α β,
-  hact := @snd_is_morphism th α β _ _
-}
+  ⟨@prod.snd α β, @snd_is_morphism th α β _ _⟩
 
 end morphism

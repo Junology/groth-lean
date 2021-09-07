@@ -265,6 +265,8 @@ theorem elim_aux_map {op : ℕ → Type*} {α β : Type*} {act : Π {n : ℕ}, o
 theorem elim_varleaf {op : ℕ → Type*} {α β : Type*} {act : Π {n : ℕ}, op n → vect β n → β} {c : α → β} : ∀ {a : α}, elim @act c (varleaf a) = c a :=
   by intros; unfold elim; refl
 
+#print axioms elim_varleaf
+
 -- The eliminator at opnode
 theorem elim_opnode {op : ℕ → Type*} {α : Type*} {β : Type*} {act : Π {n : ℕ}, op n → vect β n → β} {c : α → β} : ∀ {n : ℕ} {f : op n} {ts : vect (optree op α) n}, elim @act c (opnode f ts) = act f (vect.map (elim @act c) ts)
 | _ f vect.nil := by unfold elim; unfold vect.map
@@ -276,21 +278,40 @@ theorem elim_opnode {op : ℕ → Type*} {α : Type*} {β : Type*} {act : Π {n 
 
 #print axioms elim_opnode
 
+--- `elim` followed by a function application equals `elim`.
+mutual theorem elim_funap, elim_aux_funap {op : ℕ → Type*} {α β γ: Type*} {actb : Π {n : ℕ}, op n → vect β n → β} {actc : Π {n : ℕ}, op n → vect γ n → γ} {c : α → β} {f : β → γ} (hact : ∀ {n} (μ : op n) (bs : vect β n), f (actb μ bs) = actc μ (bs.map f))
+with elim_funap : ∀ {t : optree op α}, f (t.elim @actb c) = t.elim @actc (f ∘ c)
+| (varleaf x) := by unfold elim
+| (opnode μ ⁅⁆) := by unfold elim; rw [hact]; dunfold vect.map; refl
+| (opnode μ (t ∺ ts)) :=
+  begin
+    unfold elim,
+    rw [hact],
+    unfold vect.map,
+    rw [elim_funap, elim_aux_funap]
+  end
+with elim_aux_funap : ∀ {n : ℕ} {ts : vect (optree op α) n}, vect.map f (elim_aux @actb c ts) = elim_aux @actc (f ∘ c) ts
+| _ ⁅⁆ := by unfold elim_aux; unfold vect.map
+| _ (t ∺ ts) := by unfold elim_aux; unfold vect.map; rw [elim_funap, elim_aux_funap]
+
+#print axioms elim_funap
+
 -- The eliminator respects function extensionality
 mutual theorem elim_funext, elim_aux_funext {op : ℕ → Type*} {α : Type*} {β : Type*} {act₁ act₂ : Π {n : ℕ}, op n → vect β n → β} {c₁ c₂ : α → β} (hact : ∀ {n : ℕ} {f : op n} {bs : vect β n}, act₁ f bs = act₂ f bs) (hc : ∀ {a : α}, c₁ a = c₂ a)
 with elim_funext : ∀ {t : optree op α}, elim @act₁ c₁ t = elim @act₂ c₂ t
-| (varleaf x) := by simp [elim, hc]
-| (opnode f vect.nil) := by simp [elim,hact]
+| (varleaf x) := by unfold elim; exact hc
+| (opnode f vect.nil) := by unfold elim; exact hact
 | (opnode f (vect.cons t ts)) :=
-  by simp [elim]; rw [elim_funext,elim_aux_funext, hact]
+  by unfold elim; rw [elim_funext,elim_aux_funext, hact]
 with elim_aux_funext : ∀ {n : ℕ} {ts : vect (optree op α) n}, elim_aux @act₁ c₁ ts = elim_aux @act₂ c₂ ts
-| _ vect.nil := by simp [elim_aux]; refl
+| _ vect.nil := by unfold elim_aux
 | _ (vect.cons t ts) :=
   begin
-    simp [elim_aux],
+    unfold elim_aux,
     rw [elim_funext,elim_aux_funext],
-    split; refl
   end
+
+#print axioms elim_funext
 
 -- Elimination into pairs produces pairs of elimination
 mutual theorem elim_prod, elim_aux_prod {op : ℕ → Type*} {α : Type*} {β₁ : Type _} {β₂ : Type _} {act₁ : Π {n : ℕ}, op n → vect β₁ n → β₁} {act₂ : Π {n : ℕ}, op n → vect β₂ n → β₂} (c : α → β₁×β₂)

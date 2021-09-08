@@ -5,7 +5,7 @@ inductive vect (α : Type u) : ℕ → Type u
 | cons {n : ℕ} : α → vect n → vect (n+1)
 
 infixr ` ∺ `:67 := vect.cons
-notation `⁅` v:(foldr `, ` (h t, vect.cons h t) vect.nil `⁆`) := v
+notation `⁅`:1024 v:(foldr `, ` (h t, vect.cons h t) vect.nil `⁆`) := v
 
 namespace vect
 

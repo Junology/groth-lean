@@ -1,3 +1,4 @@
+import algebra.free_model
 import .basic .hom
 
 /-!
@@ -43,6 +44,12 @@ lemma pair_is_sum {α β : Type _} [model binary_module α] [model binary_module
 
 #print axioms pair_is_sum
 
+
+/-!
+ * Proof of the fact that the product of models of `binary_module` is simultaneously a coproduct.
+--/
+
+section
 
 local infixl `●`:100 := hom.comp
 
@@ -112,5 +119,122 @@ theorem co_unzip_of_co_zip_ptwise {α β γ : Type _} [model binary_module α]  
   end
 
 #print axioms co_unzip_of_co_zip_ptwise
+
+end
+
+
+/-!
+ * Proof of the fact that the (co)product of free models of `binary_module` is again free.
+--/
+
+section
+
+universe u
+
+variables {α β : Sort _}
+variables {φ ψ : Type _} [model binary_module φ] [model binary_module ψ]
+variables (ja : α → φ) (jb : β → ψ)
+
+local infixl `●`:100 := hom.comp
+
+definition basis_sum : psum α β → φ×ψ
+| (psum.inl a) := (ja a, binary_module.zero ψ)
+| (psum.inr b) := (binary_module.zero φ, jb b)
+
+--- the (co)product of free models of `binary_module` is again free.
+theorem prod_free (ha : is_free.{u} binary_module ja) (hb : is_free.{u} binary_module jb) : is_free.{u} binary_module (basis_sum ja jb) :=
+  begin
+    intros γ mc f,
+    let hfa := @ha γ mc (λ a, f (psum.inl a)),
+    let hfb := @hb γ mc (λ b, f (psum.inr b)),
+    cases h₁: hfa with f₁ hf₁,
+    cases h₂: hfb with f₂ hf₂,
+    existsi @co_zip φ ψ γ _ _ mc f₁ f₂,
+    dsimp * at *,
+    split,
+    show ∀ (x : psum α β), (@co_zip φ ψ γ _ _ mc f₁ f₂).val (basis_sum ja jb x) = f x, {
+      intros x; cases x with a b,
+      case psum.inl {
+        dunfold basis_sum,
+        dunfold binary_module.zero,
+        dunfold co_zip,
+        dsimp [hom.comp,morphism.comp,function.comp],
+        dsimp [has_add.add,binary_module.add],
+        dsimp [premodel.act,vect.map],
+        csimp only [vect.unzip_fam_eval,vect.map],
+        dsimp [prod_fst,morphism.proj_fst],
+        dsimp [prod_snd,morphism.proj_snd],
+        rw [f₂.property],
+        dunfold vect.map,
+        let hz := @binary_module.add_zero γ mc,
+        dsimp [binary_module.add, binary_module.zero] at hz,
+        rw [hz],
+        rw [hf₁.left]
+      },
+      case psum.inr {
+        dunfold basis_sum,
+        dunfold binary_module.zero,
+        dunfold co_zip,
+        dsimp [hom.comp,morphism.comp,function.comp],
+        dsimp [has_add.add,binary_module.add],
+        dsimp [premodel.act,vect.map],
+        csimp only [vect.unzip_fam_eval,vect.map],
+        dsimp [prod_fst,morphism.proj_fst],
+        dsimp [prod_snd,morphism.proj_snd],
+        rw [f₁.property],
+        dunfold vect.map,
+        let hz := @binary_module.zero_add γ mc,
+        dsimp [binary_module.add, binary_module.zero] at hz,
+        rw [hz],
+        rw [hf₂.left]
+      }
+    },
+    show ∀ (g : @hom (φ×ψ) γ _ mc), (∀ x, g.val (basis_sum ja jb x) = f x) → g = @co_zip φ ψ γ _ _ mc f₁ f₂, {
+      intros g hg,
+      apply subtype.eq,
+      funext uv; cases uv with u v,
+      rw [pair_is_sum (u,v)],
+      dsimp [has_add.add,binary_module.add],
+      rw [g.property],
+      dsimp [vect.map],
+      dunfold co_zip,
+      dsimp [hom.comp,morphism.comp,function.comp],
+      dsimp [has_add.add,binary_module.add],
+      dsimp [premodel.act,vect.map,prod.map],
+      rw [vect.unzip_fam_eval],
+      rw [vect.unzip_fst_is_map_fst,vect.unzip_snd_is_map_snd],
+      dsimp [vect.map],
+      dsimp [prod_fst,morphism.proj_fst],
+      dsimp [prod_inl,model.prod_inl],
+      dsimp [prod_snd,morphism.proj_snd],
+      dsimp [prod_inr,model.prod_inr],
+      csimp only [fixed_elem_is_zero],
+      let haz := @binary_module.add_zero φ _,
+      let hza := @binary_module.zero_add ψ _,
+      dsimp [binary_module.add,binary_module.zero] at haz hza,
+      rw [haz,hza],
+      suffices hgoal : (@hom.comp _ _ _ _ _ mc g prod_inl) = f₁ ∧ (@hom.comp _ _ _ _ _ mc g prod_inr) = f₂, {
+        rw [←hgoal.left,←hgoal.right],
+        refl
+      },
+      split,
+      show (@hom.comp _ _ _ _ _ mc g prod_inl) = f₁, {
+        apply hf₁.right _,
+        intros a,
+        exact hg (psum.inl a)
+      },
+      show (@hom.comp _ _ _ _ _ mc g prod_inr) = f₂, {
+        apply hf₂.right _,
+        intros b,
+        exact hg (psum.inr b)
+      }
+    }
+  end
+
+#print axioms prod_free
+
+end
+
+#check @basis_sum
 
 end binary_module

@@ -235,6 +235,4 @@ theorem prod_free (ha : is_free.{u} binary_module ja) (hb : is_free.{u} binary_m
 
 end
 
-#check @basis_sum
-
 end binary_module

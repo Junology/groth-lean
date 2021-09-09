@@ -111,26 +111,29 @@ definition surjective {α : Sort _} {β : Sort _} : funrel α β → Prop :=
 definition isom {α : Sort _} {β : Sort _} : funrel α β → Prop :=
   λ f, ∀ (b : β), ∃! (a : α), f.p a b
 
---- Invertible functions define invertible functional relations
-theorem invertible_fun_isom {α : Sort _} {β : Sort _} (f : α → β) (hinv : ∃ (g : β → α), (∀ (a : α), g (f a) = a)∧(∀ (b : β), f (g b) = b)) : isom (from_fun f) :=
+--- Inverse of an invertible functional relation
+definition inverse {α β : Sort _} (f : α ⇒ β) (hisom : isom f) : β ⇒ α :=
+{
+  p := λ b a, f.p a b,
+  huniq := hisom
+}
+
+--- Bijective functions define invertible functional relations
+theorem bijective_fun_isom {α : Sort _} {β : Sort _} {f : α → β} (hbij : function.bijective f) : isom (from_fun f) :=
   begin
     intro b,
-    cases hinv with g hg,
-    apply exists_unique.intro (g b),
-    show (from_fun f).p (g b) b, {
-      simp [from_fun, funrel.p],
-      exact hg.right b
-    },
-    show ∀ (y : α), (from_fun f).p y b → y = g b, {
-      intros a,
-      simp [from_fun, funrel.p],
-      intros ha,
-      by calc
-        a   = g (f a) : by rw hg.left
-        ... = g b : by rw ha
-    }
+    cases hbij.right b with a ha,
+    existsi a; split; try {exact ha},
+    intros a',
+    dsimp [from_fun],
+    rw [← ha],
+    apply hbij.left
   end
 
+#print axioms bijective_fun_isom
+
+definition inverse_of_bijective {α β : Sort _} {f : α → β} (hbij : function.bijective f) : β ⇒ α :=
+  inverse (from_fun f) (bijective_fun_isom hbij)
 
 /-!
  - Invariance of functions
@@ -164,14 +167,75 @@ definition deambiguate_comp_rel {α β γ : Sort _} {fp : α → β → Prop} {r
 
 /-!
  - Correspondence between functional relations and functions.
- - This requires "definite description" axiom.
- - Consequence: functional relations can be seen as actual functions under definite description and functional extensionality; e.g. in a Grothendieck topos.
+ - This requires `definite_description` axiom.
+ - Consequence: functional relations can be seen as actual functions under `definite_description` and functional extensionality; e.g. in a Grothendieck topos.
  -/
 namespace unsafe
 
 --- Realize a function from a functional_relation
 noncomputable definition reify {α β : Sort _} : (α ⇒ β) → α → β :=
-  λ f a, definite_description (f.huniq a)
+  λ f a, (definite_description (f.huniq a)).val
+
+--- It is a guaranteed that the values of `reify f` is the "right" one.
+lemma reify_property {α β : Sort _} (f : α ⇒ β) : ∀ {a}, f.p a (reify f a) :=
+  λ a, (definite_description (f.huniq a)).property
+
+--- Computation rule for `reify`.
+lemma reify_eq {α β : Sort _} (f : α ⇒ β) : ∀ {a b}, f.p a b ↔ reify f a = b :=
+  begin
+    intros a b,
+    split,
+    show f.p a b → reify f a = b, {
+      intro hab,
+      cases f.huniq a with b₀ hb,
+      have : b = b₀ := hb.right b hab,
+      rw [this],
+      apply hb.right,
+      exact reify_property f
+    },
+    show reify f a = b → f.p a b, {
+      intros hab,
+      rw [←hab],
+      exact reify_property f
+    },
+  end
+
+#print axioms reify_eq
+
+--- Realization of an injective functional relation is injective.
+lemma reify_injective {α β : Sort _} (f : α ⇒ β) (hinj : injective f) : function.injective (reify f) :=
+  begin
+    intros a b hfab,
+    have hfa : f.p a (reify f b) := (reify_eq f).mpr hfab,
+    have hfb : f.p b (reify f b) := reify_property f,
+    exact hinj a b _ hfa hfb
+  end
+
+--- Realization of a surjective functional relation is surjective.
+lemma reify_surjective {α β : Sort _} (f : α ⇒ β) (hsurj : surjective f) : function.surjective (reify f) :=
+  begin
+    intros b,
+    cases hsurj b with a ha,
+    existsi a,
+    exact (reify_eq f).mp ha
+  end
+
+--- Realization of an inverse of an invertible functional relation is an inverse.
+lemma reify_inverse {α β : Sort _} {f : α ⇒ β} (hisom : isom f) : (∀ a, reify (inverse f hisom) (reify f a) = a) ∧ (∀ b, reify f (reify (inverse f hisom) b) = b) :=
+  begin
+    split,
+    show ∀ a, reify (inverse f hisom) (reify f a) = a, {
+      intros a,
+      apply (reify_eq _).mp,
+      dsimp [inverse],
+      exact reify_property f
+    },
+    show ∀ b, reify f (reify (inverse f hisom) b) = b, {
+      intros b,
+      apply (reify_eq _).mp,
+      exact reify_property (inverse f hisom)
+    }
+  end
 
 --- functions are recovered via functional relations
 theorem reify_fun_id {α β : Sort _} (f : α → β) : ∀ (a : α), reify (from_fun f) a = f a :=

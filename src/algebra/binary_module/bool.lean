@@ -1,4 +1,4 @@
-import data.bool.partial
+import data.bool.subbool
 import data.bool.misc
 
 import algebra.theory
@@ -169,9 +169,9 @@ theorem bool_free : is_free binary_module (function.const unit tt) :=
 end binary_module
 
 @[instance]
-definition bool_p_bxor (p : Prop) : model binary_module (bool_p p) :=
+definition subbool_binmod (p : Prop) : model binary_module (subbool p) :=
 {
-  act := λ n f, vect.foldl bxor_p (ff_p p),
+  act := λ n f, vect.foldl subbool.xor (subbool.ff p),
   haxiom :=
     begin
       intros n r var,
@@ -180,39 +180,41 @@ definition bool_p_bxor (p : Prop) : model binary_module (bool_p p) :=
         dsimp [binary_module],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
         dunfold vect.foldl,
-        exact ff_bxor_p _
+        exact subbool.ff_xor _
       },
       case binary_module.rels.right_zero {
         dsimp [binary_module],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
         dunfold vect.foldl,
-        rw [bxor_p_ff,ff_bxor_p],
+        rw [subbool.xor_ff,subbool.ff_xor],
       },
       case binary_module.rels.add_self {
         dsimp [binary_module],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
         dunfold vect.foldl,
-        rw [ff_bxor_p,bxor_p_self]
+        rw [subbool.ff_xor, subbool.xor_self]
       },
       case binary_module.rels.add_comm {
         dsimp [binary_module],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
         dunfold vect.foldl,
-        csimp only [ff_bxor_p,bxor_p_comm]
+        csimp only [subbool.ff_xor, subbool.xor_comm]
       },
       case binary_module.rels.add_assoc {
         dsimp [binary_module],
         repeat { unfold optree.elim; try {unfold optree.elim_aux} },
         dunfold vect.foldl,
-        csimp only [ff_bxor_p,bxor_p_assoc]
+        csimp only [subbool.ff_xor, subbool.xor_assoc]
       },
     end
 }
 
+#print axioms subbool_binmod
+
 namespace binary_module
 
 @[reducible]
-definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p → α) : morphism binary_module (bool_p p) α :=
+definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p → α) : morphism binary_module (subbool p) α :=
 {
   val := λ x, @subtype.rec_on _ _ (λ_, α) x (λ b, @bool.cases_on (λ b, p∨b=ff → α) b (λ_, binary_module.zero α) (λ h, a (or.elim h id (λ h, by injection h)))),
   property :=
@@ -234,7 +236,7 @@ definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p �
           case bool.ff {
             let h := binary_module.add_zero (binary_module.zero α),
             unfold binary_module.add at h,
-            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨ff, x_property⟩ (vect.cons ⟨ff, y_property⟩ vect.nil)) = ff_p p,
+            have : vect.foldl subbool.xor (subbool.ff p) ⁅⟨ff, x_property⟩, ⟨ff, y_property⟩⁆ = subbool.ff p,
               by refl,
             rw [this],
             unfold vect.map,
@@ -244,7 +246,7 @@ definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p �
             have : p, from or.elim y_property id (λ h, by injection h),
             let h := binary_module.zero_add (a this),
             unfold binary_module.add at h,
-            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨ff, x_property⟩ (vect.cons ⟨tt, y_property⟩ vect.nil)) = tt_p (y_property.elim id (λ x, by injection x)),
+            have : vect.foldl subbool.xor (subbool.ff p) ⁅⟨ff, x_property⟩, ⟨tt, y_property⟩⁆ = subbool.tt (y_property.elim id (λ x, by injection x)),
               by refl,
             rw [this],
             unfold vect.map,
@@ -257,7 +259,7 @@ definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p �
             have : p, from or.elim x_property id (λ h, by injection h),
             let h := binary_module.add_zero (a this),
             unfold binary_module.add at h,
-            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨tt, x_property⟩ (vect.cons ⟨ff, y_property⟩ vect.nil)) = tt_p (x_property.elim id (λ x, by injection x)),
+            have : vect.foldl subbool.xor (subbool.ff p) ⁅⟨tt, x_property⟩, ⟨ff, y_property⟩⁆ = subbool.tt (x_property.elim id (λ x, by injection x)),
               by refl,
             rw [this],
             unfold vect.map,
@@ -267,7 +269,7 @@ definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p �
             have : p, from or.elim x_property id (λ h, by injection h),
             let h := binary_module.add_self (a this),
             unfold binary_module.add at h,
-            have : vect.foldl bxor_p (ff_p p) (vect.cons ⟨tt, x_property⟩ (vect.cons ⟨tt, y_property⟩ vect.nil)) = ff_p p,
+            have : vect.foldl subbool.xor (subbool.ff p) ⁅⟨tt, x_property⟩, ⟨tt, y_property⟩⁆ = subbool.ff p,
               by refl,
             rw [this],
             unfold vect.map,
@@ -280,7 +282,7 @@ definition generate_p (p : Prop) {α : Type _} [model binary_module α] (a : p �
 
 #print axioms generate_p
 
-theorem bool_p_free (p : Prop) : is_free binary_module (@tt_p p) :=
+theorem subbool_free (p : Prop) : is_free binary_module (@subbool.tt p) :=
   begin
     intros γ mc f,
     existsi @generate_p _ _ mc f,
@@ -313,6 +315,6 @@ theorem bool_p_free (p : Prop) : is_free binary_module (@tt_p p) :=
     }
   end
 
-#print axioms bool_p_free
+#print axioms subbool_free
 
 end binary_module

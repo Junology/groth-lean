@@ -4,6 +4,19 @@ open function
 
 namespace function
 
+--- Composition of retractions is again a retraction.
+lemma left_inverse_comp {α β γ : Sort _} {gr : γ → β} {g : β → γ} {fr : β → α} {f : α → β} : left_inverse gr g → left_inverse fr f → left_inverse (fr∘ gr) (g∘f) :=
+  begin
+    intros hg hf a,
+    dsimp [function.comp],
+    rw [hg, hf]
+  end
+
+--- Composition of sections is again a section.
+lemma right_inverse_comp {α β γ : Sort _} {gr : γ → β} {g : β → γ} {fr : β → α} {f : α → β} : right_inverse gr g → right_inverse fr f → right_inverse (fr∘ gr) (g∘f) :=
+  λ hg hf, left_inverse_comp hf hg
+
+
 definition has_inverse {α β : Sort _} (f : α → β) : Prop :=
   ∃ (g : β → α), left_inverse g f ∧ right_inverse g f
 
@@ -55,45 +68,5 @@ lemma has_inverse.bijective {α β : Sort _} {f : α → β} : has_inverse f →
   end
 
 end has_inverse
-
-
-structure bijection (α β : Sort _) :=
-  (f : α → β) (inv : β → α) (left_inverse : left_inverse inv f) (right_inverse : right_inverse inv f)
-
-lemma bijection.f_has_inverse {α β : Sort _} (f : bijection α β) : has_inverse f.f :=
-  begin
-    existsi f.inv,
-    split; try {exact f.left_inverse}; try {exact f.right_inverse}
-  end
-
-lemma bijection.inv_has_inverse {α β : Sort _} (f : bijection α β) : has_inverse f.inv :=
-  begin
-    existsi f.f,
-    split; try {exact f.left_inverse}; try {exact f.right_inverse}
-  end
-
-namespace unsafe
-
-noncomputable definition choose_inverse {α β : Sort _} (f : α → β) (hbij : bijective f) : bijection α β :=
-{
-  f := f,
-  inv := funrel.unsafe.reify (funrel.inverse_of_bijective hbij),
-  left_inverse :=
-    begin
-      intros a,
-      rw [←funrel.unsafe.reify_fun_id f],
-      exact (funrel.unsafe.reify_inverse (funrel.bijective_fun_isom hbij)).left a,
-    end,
-  right_inverse :=
-    begin
-      intros b,
-      rw [←funrel.unsafe.reify_fun_id f],
-      exact (funrel.unsafe.reify_inverse (funrel.bijective_fun_isom hbij)).right b
-    end
-}
-
-#print axioms choose_inverse
-
-end unsafe
 
 end function

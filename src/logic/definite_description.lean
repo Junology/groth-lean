@@ -1,7 +1,7 @@
 import logic.idecidable
 
 --- Statement of definite description
-axiom definite_description {α : Type*} {p : α → Prop} : (∃! (a : α), p a) → {a:α // p a}
+axiom definite_description {α : Sort _} {p : α → Prop} : (∃! (a : α), p a) → {a:α // p a}
 
 namespace unsafe
 

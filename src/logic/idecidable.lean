@@ -12,6 +12,10 @@ class idecidable (p : Prop) : Prop :=
 @[reducible]
 definition idecidable_eq (α : Sort _) : Prop := ∀ (a b : α), idecidable (a=b)
 
+@[reducible]
+def idecidable_rel {α : Sort _} (r : α → α → Prop) :=
+  ∀ a b, idecidable (r a b)
+
 @[elab_as_eliminator]
 lemma whether (p : Prop) [idec : idecidable p] : p ∨ ¬ p :=
   idec.is_either

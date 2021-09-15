@@ -2,17 +2,12 @@
 -- https://ncatlab.org/nlab/show/linear+order
 
 import logic.definite_description
+import logic.idecidable
 
-/-
- ******************
- ** Main classes **
- ******************
--/
 
-@[reducible]
-def idecidable_rel {α : Sort _} (r : α → α → Prop) :=
-  ∀ a b, idecidable (r a b)
-
+/-!
+ * Main classes
+--/
 --- `is_linear_comparable X r` means the binary relation `r` on `X` satisfies the comparison axiom, which is involved with a kind of totality.
 class is_linear_comparable (α : Type*) (r : α → α → Prop) : Prop :=
   (linear_comparable : ∀ a b c, r a b → r c b ∨ r a c)
@@ -25,11 +20,9 @@ class is_connected (α : Type*) (r : α → α → Prop) : Prop :=
 class is_strict_linear_order (α : Type*) (r : α → α → Prop) extends is_strict_order α r, is_asymm α r, is_linear_comparable α r, is_connected α r : Prop
 
 
-/-
- ************
- ** Lemmas **
- ************
--/
+/-!
+ * Lemmas
+--/
 
 -- trichotomous axiom and transitivity implies linearly comparability.
 lemma is_linear_comparable_of_is_trichotomous_of_is_trans {α : Type*} (r : α → α → Prop) [is_trichotomous α r] [is_trans α r] : is_linear_comparable α r :=
@@ -104,11 +97,10 @@ lemma is_trichotomous_of_is_connected {α : Type*} (r : α → α → Prop) [dec
     }
   end
 
-/-
- *******************
- ** Main theorems **
- *******************
--/
+
+/-!
+ * Main theorems
+--/
 
 instance is_strict_linear_order_of_is_strict_total_order {α : Type*} (r : α → α → Prop) [hsto : is_strict_total_order α r] : is_strict_linear_order α r :=
   {

@@ -1,4 +1,4 @@
-import algebra.spaceship
+import logic.spaceship
 import logic.funrel
 
 --- Inductively defined finite sets

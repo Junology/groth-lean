@@ -2,9 +2,8 @@
 -- Spaceship operator (aka. three-way comparison) --
 --================================================--
 
-import algebra.linear_order
-import logic.misc
 import tactic.csimp
+import .misc .linear_order
 
 --- Spaceship operator (aka. three-way comparison).
 class has_spaceship (α : Type*) :=
@@ -225,5 +224,4 @@ end unsafe
 #print axioms is_refl_of_is_irrefl
 #print axioms is_trans_of_is_trans
 #print axioms unsafe.is_linear_of_is_strict_total_order
-
 

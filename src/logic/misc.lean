@@ -83,3 +83,40 @@ lemma not_or_distrib {p q : Prop} : ¬(p∨q) ↔ (¬p)∧(¬q) :=
       exact or.elim hpq hnpq.left hnpq.right
     },
   end
+
+#print axioms not_or_distrib
+
+#check or_iff_left_of_imp
+
+lemma and_iff_left_of_imp {p q : Prop} : (p → q) → (p ∧ q ↔ p) :=
+  λ hpq, iff.intro and.left (λ hp, ⟨hp,hpq hp⟩)
+
+lemma and_iff_right_of_imp {p q : Prop} : (q → p) → (p ∧ q ↔ q) :=
+  λ hqp, iff.intro and.right (λ hq, ⟨hqp hq, hq⟩)
+
+#print axioms and_iff_left_of_imp
+#print axioms and_iff_right_of_imp
+
+lemma or_disproof_left {p q : Prop} (hnp : ¬p) : (p ∨ q) ↔ q :=
+  iff.intro (or.rec (by intro; contradiction) id) or.inr
+
+lemma or_disproof_right {p q : Prop} (hnp : ¬p) : (q∨ p) ↔ q :=
+  iff.intro (or.rec id (by intro; contradiction)) or.inl
+
+#print axioms or_disproof_left
+
+lemma or_and_distrib {p q r : Prop} : (p ∨ q) ∧ r ↔ (p ∧ r) ∨ (q ∧ r) :=
+{
+  mp :=
+    λ hpqr,
+      hpqr.left.elim
+        (λ hp, or.inl ⟨hp,hpqr.right⟩)
+        (λ hq, or.inr ⟨hq,hpqr.right⟩),
+  mpr :=
+    λ hprqr,
+      hprqr.elim
+        (λ hpr, ⟨or.inl hpr.left, hpr.right⟩)
+        (λ hqr, ⟨or.inr hqr.left, hqr.right⟩)
+}
+
+#print axioms or_and_distrib

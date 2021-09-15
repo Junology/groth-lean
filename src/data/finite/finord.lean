@@ -1,4 +1,3 @@
-
 import algebra.spaceship
 import logic.funrel
 
@@ -45,7 +44,7 @@ lemma fz_not_fs {n : ℕ} : ∀ {k : finord n}, fs k ≠ fz :=
   end
 
 --- `fs` is injective.
-lemma fs_inj {n : ℕ} : ∀ {k l : finord n}, fs k = fs l → k = l :=
+lemma fs_inj {n : ℕ} : function.injective (@finord.fs n) :=
   begin
     intros k l h,
     injection h

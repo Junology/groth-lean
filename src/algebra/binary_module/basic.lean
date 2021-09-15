@@ -1,4 +1,5 @@
 import algebra.theory
+import algebra.abelian
 
 /-
  * Basic operations and relations
@@ -46,18 +47,22 @@ definition binary_module : theory :=
 -/
 namespace binary_module
 
-@[reducible]
+@[reducible,inline]
 protected
 definition zero (α : Type _) [hpm : premodel binary_module α] : α :=
   @premodel.act binary_module α hpm _ binary_module.ops.zero vect.nil
 
-@[reducible]
+@[reducible,inline]
 protected
 definition add {α : Type _} [hm : premodel binary_module α] : α → α → α :=
   λ a b, @premodel.act binary_module α hm _ binary_module.ops.add (vect.cons a (vect.cons b vect.nil))
 
+definition has_binary_zero (α : Type _) [premodel binary_module α] : has_zero α := has_zero.mk (binary_module.zero α)
+
 --- Useful to define an instance of `has_add α` by `attribute [instance] has_binary_add α` if `α` is a premodel of binary_module.
 definition has_binary_add (α : Type _) [premodel binary_module α] : has_add α := has_add.mk binary_module.add
+
+definition has_binary_neg (α : Type _) [premodel binary_module α] : has_neg α := has_neg.mk id
 
 @[simp]
 lemma zero_add {α : Type _} [model binary_module α] : ∀ a, binary_module.add (binary_module.zero α) a = a :=
@@ -118,6 +123,19 @@ lemma add_assoc {α : Type _} [model binary_module α] : ∀ (a b c : α), binar
   end
 
 #print axioms binary_module.add_assoc
+
+definition binary_abelian (α : Type _) [model binary_module α] : has_add_abelian α :=
+{
+  to_has_add := has_binary_add α,
+  to_has_zero := has_binary_zero α,
+  to_has_neg := has_binary_neg α,
+  add_zero := binary_module.add_zero,
+  add_neg := binary_module.add_self,
+  add_comm := binary_module.add_comm,
+  add_assoc := binary_module.add_assoc,
+}
+
+#print axioms binary_abelian
 
 --- The constant map at `zero` yields a morphism of binary modules.
 definition zero_morphism (α β : Type _) [model binary_module α] [model binary_module β] : morphism binary_module α β :=

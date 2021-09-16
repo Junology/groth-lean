@@ -55,17 +55,10 @@ lemma has_right_inverse {α β : Sort _} {f : α → β} : has_inverse f → fun
 #print axioms has_inverse.has_left_inverse
 #print axioms has_inverse.has_right_inverse
 
-lemma has_inverse.bijective {α β : Sort _} {f : α → β} : has_inverse f → bijective f :=
-  begin
-    intros hinv,
-    split,
-    show injective f, {
-      exact function.has_left_inverse.injective hinv.has_left_inverse
-    },
-    show surjective f, {
-      exact function.has_right_inverse.surjective hinv.has_right_inverse
-    }
-  end
+lemma bijective {α β : Sort _} {f : α → β} : has_inverse f → bijective f
+| ⟨g, h⟩ := ⟨has_left_inverse.injective ⟨g, h.left⟩, has_right_inverse.surjective ⟨g, h.right⟩⟩
+
+#print axioms has_inverse.bijective
 
 end has_inverse
 

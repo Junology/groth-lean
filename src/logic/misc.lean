@@ -1,4 +1,8 @@
 
+--- All equality are heterogeneously equal to `rfl`.
+lemma eq_irrel {α : Sort _} : ∀ {x y : α} (hxy : x = y), hxy == @rfl α x
+| _ _ rfl := heq.rfl
+
 attribute [simp]
 definition ite_eval_true {p : Prop} [pdec : decidable p] {α : Type*} : p → ∀ (a b : α), ite p a b = a :=
   begin

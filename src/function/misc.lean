@@ -62,4 +62,19 @@ lemma bijective {α β : Sort _} {f : α → β} : has_inverse f → bijective f
 
 end has_inverse
 
+--- Analogue of `congr` for functions with dependent domain.
+definition dcongr {α : Sort _} {C : α → Sort _} {β : Sort _} : ∀ {a b : α} {f : C a → β} {g : C b → β} {x : C a} {y : C b}, a = b → f == g → x == y → f x = g y :=
+  begin
+    intros a b f g x y hab hfg hxy,
+    cases hab,
+    cases hfg,
+    cases hxy,
+    refl
+  end
+
+--- Analogue of `congr_arg` for functions with dependent codomain.
+definition hcongr_arg {α : Sort _} {C : α → Sort _} (f : Π a, C a) : ∀ {x y : α}, x=y → f x == f y
+| _ _ rfl := heq.rfl
+
+
 end function

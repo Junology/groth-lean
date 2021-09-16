@@ -55,6 +55,16 @@ protected
 lemma inv_is_bijective {α β : Sort _} (f : bijection α β) : bijective f.inv :=
   ⟨f.inv_is_injective, f.inv_is_surjective⟩
 
+--- The identity if a bijection
+protected
+definition id {α : Sort _} : bijection α α :=
+{
+  to_fun := @id α,
+  inv := @id α,
+  left_inverse := λ _, rfl,
+  right_inverse := λ _, rfl
+}
+
 --- The composition of bijections is a bijection.
 protected
 definition comp {α β γ : Sort _} (g : bijection β γ) (f : bijection α β) : bijection α γ :=

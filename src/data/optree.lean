@@ -259,13 +259,9 @@ theorem elim_aux_map {op : ℕ → Type*} {α β : Type*} {act : Π {n : ℕ}, o
     rw [elim_aux_map]
   end
 
-#print axioms elim_aux_map
-
 -- The eliminator at varleaf
 theorem elim_varleaf {op : ℕ → Type*} {α β : Type*} {act : Π {n : ℕ}, op n → vect β n → β} {c : α → β} : ∀ {a : α}, elim @act c (varleaf a) = c a :=
   by intros; unfold elim; refl
-
-#print axioms elim_varleaf
 
 -- The eliminator at opnode
 theorem elim_opnode {op : ℕ → Type*} {α : Type*} {β : Type*} {act : Π {n : ℕ}, op n → vect β n → β} {c : α → β} : ∀ {n : ℕ} {f : op n} {ts : vect (optree op α) n}, elim @act c (opnode f ts) = act f (vect.map (elim @act c) ts)
@@ -275,8 +271,6 @@ theorem elim_opnode {op : ℕ → Type*} {α : Type*} {β : Type*} {act : Π {n 
     unfold elim; unfold vect.map,
     rw [elim_aux_map]
   end
-
-#print axioms elim_opnode
 
 --- `elim` followed by a function application equals `elim`.
 mutual theorem elim_funap, elim_aux_funap {op : ℕ → Type*} {α β γ: Type*} {actb : Π {n : ℕ}, op n → vect β n → β} {actc : Π {n : ℕ}, op n → vect γ n → γ} {c : α → β} {f : β → γ} (hact : ∀ {n} (μ : op n) (bs : vect β n), f (actb μ bs) = actc μ (bs.map f))
@@ -294,8 +288,6 @@ with elim_aux_funap : ∀ {n : ℕ} {ts : vect (optree op α) n}, vect.map f (el
 | _ ⁅⁆ := by unfold elim_aux; unfold vect.map
 | _ (t ∺ ts) := by unfold elim_aux; unfold vect.map; rw [elim_funap, elim_aux_funap]
 
-#print axioms elim_funap
-
 -- The eliminator respects function extensionality
 mutual theorem elim_funext, elim_aux_funext {op : ℕ → Type*} {α : Type*} {β : Type*} {act₁ act₂ : Π {n : ℕ}, op n → vect β n → β} {c₁ c₂ : α → β} (hact : ∀ {n : ℕ} {f : op n} {bs : vect β n}, act₁ f bs = act₂ f bs) (hc : ∀ {a : α}, c₁ a = c₂ a)
 with elim_funext : ∀ {t : optree op α}, elim @act₁ c₁ t = elim @act₂ c₂ t
@@ -310,8 +302,6 @@ with elim_aux_funext : ∀ {n : ℕ} {ts : vect (optree op α) n}, elim_aux @act
     unfold elim_aux,
     rw [elim_funext,elim_aux_funext],
   end
-
-#print axioms elim_funext
 
 -- Elimination into pairs produces pairs of elimination
 mutual theorem elim_prod, elim_aux_prod {op : ℕ → Type*} {α : Type*} {β₁ : Type _} {β₂ : Type _} {act₁ : Π {n : ℕ}, op n → vect β₁ n → β₁} {act₂ : Π {n : ℕ}, op n → vect β₂ n → β₂} (c : α → β₁×β₂)
@@ -330,8 +320,6 @@ with elim_aux_prod : ∀ {n : ℕ} {ts : vect (optree op α) n}, (@elim_aux op �
     csimp [elim_aux, vect.unzip, prod.map],
     rw [elim_prod, elim_aux_prod]
   end
-
-#print axioms elim_prod
 
 -- theorem elim_ext {op : ℕ → Type.{u}} {α : Type.{v}} {β : Type _} {B : β → Type _} {act : Π {n : ℕ}, op n → vect (Π b, B b) n → Π b, B b} {c : α → Π b, B b} := sorry
 
@@ -352,8 +340,6 @@ with elim_aux_pi : ∀ {n : ℕ} {ts : vect (optree op α) n} {b : β}, (elim_au
     rw [elim_aux_pi]
   end
 
-#print axioms elim_pi
-
 mutual theorem elim_subtype, elim_aux_subtype {op : ℕ → Type*} {α : Type*} {β : Type _} {P : β → Prop} {act : Π {n : ℕ}, op n → vect β n → β} {hsub : ∀ {n : ℕ} (f : op n) (ts : vect (subtype P) n), P (act f (vect.map subtype.val ts))} {c : α → subtype P}
 with elim_subtype : ∀ {t : optree op α}, subtype.val (elim (λ n k (rs : vect (subtype P) n), ⟨@act n k (vect.map subtype.val rs), hsub k rs⟩) c t) = elim @act (subtype.val ∘ c) t
 | (varleaf x) := by unfold elim
@@ -371,8 +357,6 @@ with elim_aux_subtype : ∀ {n : ℕ} {ts : vect (optree op α) n}, vect.map sub
     rw [elim_subtype, elim_aux_subtype],
     try {split; refl}
   end
-
-#print axioms elim_subtype
 
 -- unzip is an injective function.
 mutual theorem unzip_inj, unzip_aux_inj {op : ℕ → Type*} {α : Type*} {β : Type*}
@@ -477,8 +461,6 @@ with unzip_aux_inj : ∀{n : ℕ} {ts1 ts2 : vect (optree op (α×β)) n}, unzip
     },
     rw [ht,hts]
   end
-
-#print axioms optree.unzip_inj
 
 end optree
 

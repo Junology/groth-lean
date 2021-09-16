@@ -1,4 +1,4 @@
-import algebra.optree
+import data.optree
 import data.vect
 import data.finite.finord
 

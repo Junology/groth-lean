@@ -1,4 +1,4 @@
-import algebra.theory
+import .basic
 import function.misc function.bijection
 
 universe u

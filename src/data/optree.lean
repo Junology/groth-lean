@@ -37,6 +37,11 @@ with nnodes_vec : Π{op : ℕ → Type*}, Π {α : Type*}, Π {n : ℕ}, vect (o
 definition nnodes_wf {op : ℕ → Type*} {α : Type*} :=
   measure_wf (@nnodes op α)
 
+lemma nnodes_vec_cons {op : ℕ → Type _} {α : Type _} (f : optree op α) {n : ℕ} {fs : vect (optree op α) n} : nnodes_vec (f∺fs) = nnodes f + nnodes_vec fs :=
+begin
+  unfold nnodes_vec
+end
+
 -- Auxiliary function to define nnodes_child
 theorem nnodes_vec_mem {op : ℕ → Type*} {α : Type*} (tm : optree op α) {n : ℕ} (ts : vect (optree op α) n) : ts.mem tm → nnodes tm ≤ nnodes_vec ts:=
   begin
@@ -45,17 +50,17 @@ theorem nnodes_vec_mem {op : ℕ → Type*} {α : Type*} (tm : optree op α) {n 
       exact false.elim
     },
     case vect.cons {
-      simp [vect.mem,nnodes_vec],
-      intro hmem,
-      cases hmem,
+      dsimp [vect.mem,nnodes_vec],
+      rw [nnodes_vec_cons],
+      intros h; cases h,
       case or.inl {
-        rw [hmem],
-        exact nat.le_add_right tm.nnodes (nnodes_vec ts_tail)
+        rw [h],
+        exact nat.le_add_right _ _
       },
       case or.inr {
         by calc
           tm.nnodes
-              ≤ nnodes_vec ts_tail : h_ind hmem
+              ≤ nnodes_vec ts_tail : h_ind h
           ... ≤ ts_head.nnodes + nnodes_vec ts_tail : nat.le_add_left _ _
       }
     }
@@ -102,7 +107,7 @@ theorem accessible {op : ℕ → Type*} {α : Type*}: ∀ {t : optree op α}, ac
     apply nnodes_wf.fix,
     intros x h_ind,
     clear t,
-    simp [measure, inv_image] at h_ind,
+    dsimp [measure, inv_image] at h_ind,
     apply acc.intro,
     intros y hchild,
     exact h_ind y (nnodes_child y x hchild)
@@ -178,8 +183,8 @@ theorem opnode_inj_nh {op : ℕ → Type*} {α : Type*} : Π {n : ℕ} {f1 f2 : 
 -- Differenti constructors produce different terms
 theorem varleaf_neq_opnode {op : ℕ → Type*} {α : Type*} : ∀ {a : α} {n : ℕ} {f : op n} {t : vect (optree op α) n}, varleaf a ≠ opnode f t :=
   begin
-    intros,
-    simp *
+    intros _ _ _ _ h,
+    cases h
   end
 
 -- Functoriality
@@ -211,16 +216,16 @@ with join_unit_inner : ∀ {t : optree op α}, join (map optree.varleaf t) = t
 | (opnode f vect.nil) := by unfold map; unfold join
 | (opnode f (vect.cons t ts)) :=
   begin
-    simp [map,join],
+    unfold map; unfold join,
     rw[join_unit_inner, join_aux_unit_inner],
     try {split; refl}
   end
 with join_aux_unit_inner : ∀ {n : ℕ} {ts : vect (optree op α) n}, join_aux (map_aux optree.varleaf ts) = ts
-| _ vect.nil := by simp [map_aux,join_aux]; refl
+| _ vect.nil := by unfold map_aux; unfold join_aux; refl
 | _ (vect.cons t ts) :=
   begin
-    simp [map_aux,join_aux],
-    split,
+    unfold map_aux; unfold join_aux,
+    apply congr (congr_arg vect.cons _) _,
     show (map varleaf t).join = t,
       from join_unit_inner,
     show join_aux (map_aux varleaf ts) = ts,
@@ -230,20 +235,20 @@ with join_aux_unit_inner : ∀ {n : ℕ} {ts : vect (optree op α) n}, join_aux 
 -- Associativity of join
 mutual theorem join_assoc, join_aux_assoc {op : ℕ → Type*} {α : Type*}
 with join_assoc : ∀ {t : optree op (optree op (optree op α))}, join (join t) = join (map join t)
-| (varleaf _) := by simp [map, join]
-| (opnode _ vect.nil) := by simp [map, join]; try {split; refl}
+| (varleaf _) := by unfold map; unfold join
+| (opnode _ vect.nil) := by unfold map; unfold join; try {split; refl}
 | (opnode _ (vect.cons t ts)) :=
   begin
-    simp [map, join],
+    unfold map; unfold join,
     rw [join_assoc, join_aux_assoc],
     try {split; refl}
   end
 with join_aux_assoc : ∀ {n : ℕ} {ts : vect (optree op (optree op (optree op α))) n}, join_aux (join_aux ts) = join_aux (map_aux join ts)
-| _ vect.nil := by simp [map_aux, join_aux]; refl
+| _ vect.nil := by unfold map_aux; unfold join_aux; refl
 | _ (vect.cons t ts) :=
   begin
-    simp [map_aux, join_aux],
-    split,
+    unfold map_aux; unfold join_aux,
+    refine congr (congr_arg vect.cons _) _,
     show join (join t) = join (map join t),
       from join_assoc,
     show join_aux (join_aux ts) = join_aux (map_aux join ts),

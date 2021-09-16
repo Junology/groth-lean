@@ -1,5 +1,4 @@
 import data.vect.basic
-import logic.equal
 import tactic.csimp
 
 universe u

@@ -74,9 +74,9 @@ lemma lt_irrefl {n} : ∀ (i : finord n), ¬ i.lt i :=
   begin
     intros i,
     induction i with n' n' i hi,
-    case finord.fz { simp [finord.lt] },
+    case finord.fz { dunfold finord.lt; exact false.elim },
     case finord.fs {
-      simp [finord.lt],
+      dunfold finord.lt,
       exact hi
     }
   end
@@ -93,12 +93,12 @@ lemma lt_asymm {n} : ∀ {i j : finord n}, i.lt j → ¬ j.lt i :=
     case finord.fs {
       cases j with j' _ j',
       case finord.fz {
-        simp [finord.lt] at hab,
+        dunfold finord.lt at hab,
         contradiction
       },
       case finord.fs {
-        unfold finord.lt,
-        unfold finord.lt at hab,
+        dunfold finord.lt,
+        dunfold finord.lt at hab,
         exact hi hab
       }
     }
@@ -114,16 +114,19 @@ lemma lt_incomp_eq {n} : ∀ {i j : finord n}, ¬ i.lt j → ¬ j.lt i → i=j :
       cases j with _ _ j',
       case finord.fz { trivial },
       case finord.fs {
-        simp [finord.lt] at hji,
-        contradiction
+        dunfold finord.lt at hij,
+        exact false.elim (hij true.intro)
       }
     },
     case finord.fs {
       cases j with _ _ j',
-      case finord.fz { simp [finord.lt] at hij; contradiction },
+      case finord.fz {
+        dunfold finord.lt at hji,
+        exact false.elim (hji true.intro)
+      },
       case finord.fs {
-        simp *,
-        unfold finord.lt at hij hji,
+        apply congr (@rfl _ finord.fs),
+        dunfold finord.lt at hij hji,
         exact hi_ind hij hji
       }
     }
@@ -136,14 +139,14 @@ lemma lt_trans {n} : ∀ {i j k : finord n}, i.lt j → j.lt k → i.lt k :=
   begin
     intros i j k hij hjk,
     induction k with n' n' k hk_ind,
-    case finord.fz { cases j; simp [finord.lt] at hjk; contradiction },
+    case finord.fz { cases j; dunfold finord.lt at hjk; contradiction },
     -- In the following, we may assume `k = fs _`
     cases i with n' n' i',
-    case finord.fz { unfold finord.lt },
+    case finord.fz { dunfold finord.lt; trivial },
     case finord.fs {
       cases j with n' n' j',
-      case finord.fz { unfold finord.lt at *; contradiction },
-      case finord.fs { unfold finord.lt at *; exact hk_ind hij hjk }
+      case finord.fz { dunfold finord.lt at *; contradiction },
+      case finord.fs { dunfold finord.lt at *; exact hk_ind hij hjk }
     }
   end
 
@@ -156,12 +159,15 @@ lemma lt_trichotomous {n} : ∀ {i j : finord n}, i.lt j ∨ i=j ∨ j.lt i :=
     case finord.fz {
       cases j with _ _ j',
       case finord.fz { right; left; refl },
-      case finord.fs { left; simp [finord.lt] }
+      case finord.fs { left; dunfold finord.lt; trivial }
     },
     case finord.fs {
       cases j with _ _ j',
       case finord.fz { right; right; simp [finord.lt] },
-      case finord.fs { simp [finord.lt]; exact hi_ind }
+      case finord.fs {
+        dunfold finord.lt,
+        refine or.imp id (or.imp (congr rfl) id) hi_ind,
+      }
     }
   end
 
@@ -214,10 +220,12 @@ theorem to_fs_succ : ∀ {n : ℕ} (k : finord n), to_fin k.fs = (to_fin k).succ
     intros,
     cases k with k n k,
     case finord.fz {
-      simp [to_fin]
+      dunfold to_fin,
+      refl
     },
     case finord.fs {
-      unfold to_fin
+      dunfold to_fin,
+      refl
     }
   end
 
@@ -225,14 +233,15 @@ theorem to_fs_succ : ∀ {n : ℕ} (k : finord n), to_fin k.fs = (to_fin k).succ
 definition from_fin : Π {n : ℕ}, fin n → finord n
 | 0 ⟨k,hk⟩ := (nat.not_lt_zero k hk).elim
 | (n+1) ⟨0,_⟩ := fz
-| (n+1) ⟨k+1,hk⟩ := fs (from_fin ⟨k, nat.lt_of_add_lt_add_right hk⟩)
+| (n+1) ⟨k+1,hk⟩ := fs (from_fin ⟨k, nat.lt_of_succ_lt_succ hk⟩)
 
 --- from_fin transforms fin.succ into finord.fs
 theorem from_succ_fs : ∀ {n : ℕ} (k : fin n), from_fin k.succ = (from_fin k).fs :=
   begin
     intros n k,
     cases k with kv hkv,
-    simp [fin.succ,from_fin],
+    dsimp [fin.succ,from_fin],
+    refl
   end
 
 theorem fromto_id {n : ℕ} (k : finord n) : from_fin (to_fin k) = k :=
@@ -244,10 +253,11 @@ theorem fromto_id {n : ℕ} (k : finord n) : from_fin (to_fin k) = k :=
     case nat.succ {
       cases k with _ _ k,
       case finord.fz {
-        simp [finord.to_fin, finord.from_fin]
+        dsimp [finord.to_fin, finord.from_fin],
+        refl
       },
       case finord.fs {
-        simp [finord.to_fin],
+        dunfold finord.to_fin,
         by calc
           from_fin k.to_fin.succ
               = (from_fin k.to_fin).fs : from_succ_fs _
@@ -259,7 +269,7 @@ theorem fromto_id {n : ℕ} (k : finord n) : from_fin (to_fin k) = k :=
 theorem tofrom_id {n : ℕ} (k : fin n) : to_fin (from_fin k) = k :=
   begin
     cases k with kv hkv,
-    apply subtype.eq; simp [subtype.val],
+    apply subtype.eq; dsimp [subtype.val],
     revert kv hkv,
     induction n with n hind; intros,
     case nat.zero {
@@ -268,10 +278,11 @@ theorem tofrom_id {n : ℕ} (k : fin n) : to_fin (from_fin k) = k :=
     case nat.succ {
       cases kv with kv,
       case nat.zero {
-        simp [from_fin, to_fin, subtype.val],
+        dsimp [from_fin, to_fin, subtype.val],
+        refl
       },
       case nat.succ {
-        simp [from_fin, to_fin],
+        dsimp [from_fin, to_fin],
         have : ∀ (m : fin n), m.succ.val = m.val.succ :=
           by intros; cases m; trivial,
         rw [this],

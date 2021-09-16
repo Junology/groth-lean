@@ -79,11 +79,4 @@ lemma from_vect_of_to {α : Type*} {r : α → α → Prop} : Π {x : α} {n : �
     exact (sigma.mk.inj h_ind).right
   end
 
-#print axioms from_vect'
-#print axioms to_vect
-#print axioms to_vect_is_monotonic
-#print axioms head_of_to_vect
-#print axioms to_vect_of_from
-#print axioms from_vect_of_to
-
 end based_chain

@@ -28,8 +28,6 @@ lemma mem_append' {α : Sort _} {a : α} {s t : list α} : a ∈ s ++ t ↔ a �
     }
   end
 
-#print axioms mem_append'
-
 --- Membership relation in a list after `list.filter`.
 lemma mem_filter {α : Sort _} {as : list α} {p : α → Prop} [decidable_pred p] : ∀ a, a ∈ as.filter p ↔ (a ∈ as ∧ p a) :=
   begin
@@ -75,8 +73,6 @@ lemma mem_filter {α : Sort _} {as : list α} {p : α → Prop} [decidable_pred 
     }
   end
 
-#print axioms mem_filter
-
 --- `map f` respects the membership relation.
 lemma mem_map_of_mem {α β : Type _} {f : α → β} : ∀ (x : α) (l : list α), x ∈ l → f x ∈ l.map f
 | x [] h := false.elim $ not_mem_nil x h
@@ -84,8 +80,6 @@ lemma mem_map_of_mem {α β : Type _} {f : α → β} : ∀ (x : α) (l : list �
   or.elim h
     (λ ha, or.inl (congr rfl ha))
     (λ htl, or.inr (mem_map_of_mem x tl htl))
-
-#print axioms mem_map_of_mem
 
 --- `map f` reflects the membership relation provided `f` is injective.
 lemma mem_of_mem_map {α β : Type _} {f : α → β} : function.injective f → ∀ (x : α) (l : list α), f x ∈ l.map f → x ∈ l :=
@@ -98,15 +92,11 @@ lemma mem_of_mem_map {α β : Type _} {f : α → β} : function.injective f →
     }
   end
 
-#print axioms mem_of_mem_map
-
 --- If `y` lies outside of the image of a function `f`, then it cannot be a member of any lists of the form `map f l`.
 lemma not_mem_map_of_offimage {α β : Type _} {f : α → β} (y : β) : (∀ x, f x ≠ y) → ∀ {l : list α}, y ∉ l.map f
 | _ [] := not_mem_nil y
 | hy (a::as) :=
   λ h, or.elim h (λ h, hy a h.symm) (not_mem_map_of_offimage hy)
-
-#print axioms not_mem_map_of_offimage
 
 --- If `list` has no member, then it is `nil`.
 lemma is_nil_of_no_mem {α : Sort _} : ∀ {l : list α}, (∀ x, x ∉ l) → l = []
@@ -147,12 +137,8 @@ inductive nodup {α : Sort _} : list α → Prop
 lemma nodup_head {α : Sort _} {a : α} {l : list α} : (a :: l).nodup → a ∉ l :=
   λ h, by cases h; assumption
 
-#print axioms nodup_head
-
 lemma nodup_tail {α : Sort _} {a : α} {l : list α} : (a :: l).nodup → l.nodup :=
   λ h, by cases h; assumption
-
-#print axioms nodup_tail
 
 lemma nodup_tail_of_sub {α : Sort _} {a : α} {l₁ l₂ : list α} : (a::l₁).nodup → (a::l₁ ⊆ a::l₂) → (l₁ ⊆ l₂) :=
   begin
@@ -184,8 +170,6 @@ lemma nodup_filter {α : Sort _} {p : α → Prop} [decidable_pred p] : ∀ {l},
     }
   end
 
-#print axioms nodup_filter
-
 --- `map f` reflects `nodup`.
 lemma nodup_of_nodup_map {α β : Type _} {f : α → β} : ∀ {l : list α}, nodup (l.map f) → nodup l
 | [] _ := nodup.nil
@@ -196,8 +180,6 @@ lemma nodup_of_nodup_map {α β : Type _} {f : α → β} : ∀ {l : list α}, n
     cases hfnodup with _ _ hfatl _,
     exact mt (mem_map_of_mem a tl) hfatl
   end
-
-#print axioms nodup_of_nodup_map
 
 --- `map f` respects `nodup`.
 lemma nodup_map_of_nodup {α β : Type _} {f : α → β} : function.injective f → ∀ {l}, nodup l → nodup (l.map f)
@@ -210,7 +192,6 @@ lemma nodup_map_of_nodup {α β : Type _} {f : α → β} : function.injective f
     exact hatl (mem_of_mem_map hf _ _ hfatl)
   end
 
-#print axioms nodup_map_of_nodup
 
 /-!
  * Permutation on lists; based on `list.perm` in `mathlib`.
@@ -257,8 +238,6 @@ lemma subset {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : l₁
       λ l₁ l₂ l₃ _ _ hleft hright a, hleft a ∘ hright a
     )
 
-#print axioms perm.subset
-
 protected
 lemma mem_iff {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : ∀ a, a ∈ l₁ ↔ a ∈ l₂ :=
   λ _, ⟨λ h, hperm.subset h, λ h, hperm.symm.subset h⟩
@@ -296,8 +275,6 @@ lemma mem_perm_head {α : Sort _} {a : α} {l : list α} : (a ∈ l) ↔ (∃ l'
     }
   end
 
-#print axioms mem_perm_head
-
 lemma perm_nodup {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : l₁.nodup → l₂.nodup :=
   @perm.rec_on α (λ l₁ l₂, l₁.nodup → l₂.nodup) l₁ l₂ hperm
     /- nodup.nil -/ id
@@ -324,8 +301,6 @@ lemma perm_nodup {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : 
     /- nodup.trans -/ (
       λ _ _ _ _ _ h₂ h₁, h₂ ∘ h₁
     )
-
-#print axioms perm_nodup
 
 --- `perm l₁ l₂` is derived from the equivalence of the membership relations provided both `l₁` and `l₂` are `list.nodup`.
 theorem nodup_perm_of_mem {α : Sort _} {l₁ l₂ : list α} : l₁.nodup → l₂.nodup → (∀ x, x ∈ l₁ ↔ x ∈ l₂) → perm l₁ l₂ :=
@@ -363,7 +338,5 @@ theorem nodup_perm_of_mem {α : Sort _} {l₁ l₂ : list α} : l₁.nodup → l
       }
     }
   end
-
-#print axioms nodup_perm_of_mem
 
 end list

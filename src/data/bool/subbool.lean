@@ -77,12 +77,6 @@ protected
 lemma xor_assoc {p : Prop} (a b c : subbool p) : xor (xor a b) c = xor a (xor b c) :=
   by cases a; cases a_val; cases b; cases b_val; cases c; cases c_val; unfold xor
 
-#print axioms subbool.xor_ff
-#print axioms subbool.ff_xor
-#print axioms subbool.xor_self
-#print axioms subbool.xor_comm
-#print axioms subbool.xor_assoc
-
 --- Relax the restriction on the support.
 @[reducible]
 definition relax {p q : Prop} (hpq : p → q) : subbool p → subbool q

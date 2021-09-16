@@ -16,8 +16,6 @@ namespace is_finite
 
 variables {α : Type _} [is_finite α]
 
-#check @is_finite.rec
-
 lemma replace_finord {motive : ℕ → Prop} : (∀ n, finord n → motive n) → α → ∃ n, motive n :=
   begin
     intros h a,
@@ -50,7 +48,5 @@ lemma has_element_list : nonempty {l : list α // l.nodup ∧ ∀ (x : α), x �
       exact finord.elem_list_complete _
     }
   end
-
-#print axioms has_element_list
 
 end is_finite

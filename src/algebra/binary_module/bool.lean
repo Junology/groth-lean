@@ -2,7 +2,7 @@ import data.bool.subbool
 import data.bool.misc
 
 import algebra.theory
-import algebra.free_model
+import algebra.theory.free
 import .basic
 
 /-

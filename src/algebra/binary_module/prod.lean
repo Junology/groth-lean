@@ -1,4 +1,4 @@
-import algebra.free_model
+import algebra.theory.free
 import .basic .hom
 
 /-!

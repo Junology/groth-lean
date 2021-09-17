@@ -2,7 +2,7 @@ import function.misc
 import function.bijection
 import data.list.misc
 import data.list.map_partial
-import data.finite.finord
+import data.finite
 
 --- Exhaustive list of elements of given type; i.e. a list that contains all the terms of given type with no duplicate entries.
 @[reducible,inline]
@@ -106,14 +106,6 @@ definition isom_to_finord (α : Type _) [is_finite α] : ∃ (n : ℕ), nonempty
 namespace is_finite
 
 variables {α : Type _} [is_finite α]
-
-lemma replace_finord {motive : ℕ → Prop} : (∀ n, finord n → motive n) → α → ∃ n, motive n :=
-  begin
-    intros h a,
-    cases _root_.isom_to_finord α with n e_f,
-    cases e_f with f,
-    exact ⟨n, h n (f.to_fun a)⟩
-  end
 
 --- Every finite type admits a complete list of elements.
 lemma has_exhaustive_list : nonempty (exhaustive_list α) :=

@@ -2,6 +2,7 @@ import function.misc
 import function.bijection
 import data.list.misc
 import data.list.map_partial
+import data.list.to_fun
 import data.finord
 
 --- Exhaustive list of elements of given type; i.e. a list that contains all the terms of given type with no duplicate entries.
@@ -87,6 +88,23 @@ lemma has_exhaustive_list : nonempty (exhaustive_list α) :=
     constructor,
     apply exhaustive_list.translate hf,
     exact finord.exhaustive_list n,
+  end
+
+--- Given `exhausitve_list α`, one can conclude `α` is a finite type.
+theorem is_finite_of_exhaustive_list {α : Type _} (l : exhaustive_list α) : is_finite α :=
+  begin
+    constructor,
+    existsi l.val.length,
+    existsi l.val.to_fun,
+    split,
+    show function.injective _, {
+      exact list.to_fun_injective_of_nodup l.property.left
+    },
+    show function.surjective _, {
+      intros y,
+      cases l.val.to_fun_value_of_mem (l.property.right y) with a ha,
+      exact ⟨a, ha.symm⟩
+    }
   end
 
 end is_finite

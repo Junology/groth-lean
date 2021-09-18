@@ -2,7 +2,7 @@ import function.misc
 import function.bijection
 import data.list.misc
 import data.list.map_partial
-import data.finite
+import data.finord
 import data.subtype.misc
 import .basic
 

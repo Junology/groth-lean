@@ -151,3 +151,11 @@ lemma or_and_distrib {p q r : Prop} : (p ∨ q) ∧ r ↔ (p ∧ r) ∨ (q ∧ r
 }
 
 #print axioms or_and_distrib
+
+--- The equality on Σ-type from equality and heterogeneous equality.
+lemma sigma_eq_heq {α : Sort _} {β : α → Sort _} : ∀ {x y : sigma β}, x.fst = y.fst → x.snd == y.snd → x = y
+| ⟨x,hx⟩ ⟨y,hy⟩ rfl heq.rfl := rfl
+
+--- Variant of `funext` with heterogeneous dependent domain.
+lemma funext_hdom {α : Sort _} {β : α → Sort _} {γ : Sort _} : ∀ {a₁ a₂ : α} {f : β a₁ → γ} {g : β a₂ → γ}, a₁ = a₂ → (∀ (x : β a₁) (y : β a₂), x == y → f x = g y) → f == g
+| _ _ f g rfl hfg := heq_of_eq $ funext (λ x, hfg x x heq.rfl)

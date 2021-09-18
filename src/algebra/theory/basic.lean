@@ -1,6 +1,6 @@
 import data.optree
 import data.vect
-import data.finite.finord
+import data.finord
 
 universes u v
 

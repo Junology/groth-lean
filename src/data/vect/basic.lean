@@ -1,3 +1,5 @@
+import function.bijection
+
 universes u
 
 inductive vect (α : Type u) : ℕ → Type u
@@ -83,6 +85,38 @@ definition from_list {α : Type*} : Π (ls : list α), vect α (ls.length)
 | [] := ⁅⁆
 | (x :: xs) := x ∺ (from_list xs)
 
+definition bij_to_list {α : Type _} : bijection (Σ n, vect α n) (list α) :=
+{
+  to_fun := λ v, to_list v.snd,
+  inv := λ l, ⟨l.length, from_list l⟩,
+  left_inverse :=
+    begin
+      intros v; cases v with n v,
+      dsimp *,
+      induction v with k a tl h_ind,
+      case nil { refl },
+      case cons {
+        dsimp [to_list,list.length,from_list],
+        let f : (Σ n, vect α n) → (Σ n, vect α n) :=
+          λ x, sigma.cases_on x (λ n v, ⟨n+1,a∺v⟩),
+        have : ∀ (k : ℕ) (v : vect α k), sigma.mk (k+1) (a∺v) = f ⟨k,v⟩,
+          from λ _ _, rfl,
+        repeat {rw [this] },
+        exact congr_arg f h_ind
+      }
+    end,
+  right_inverse :=
+    begin
+      intros l,
+      dsimp *,
+      induction l with a tl h_ind,
+      case nil { refl },
+      case cons {
+        dsimp [from_list,to_list],
+        exact congr_arg (list.cons a) h_ind
+      }
+    end
+}
 
 /-*********************
  -  Properties

@@ -143,8 +143,6 @@ noncomputable definition to_bijection {α β : Sort _} (f : α → β) (hbij : b
     end
 }
 
-#print axioms to_bijection
-
 --- `subsingleton` type is isomorphic to a `nonempty` proposition
 noncomputable definition subsingleton_is_proposition (α : Sort _) [subsingleton α] : bijection α (nonempty α) :=
   to_bijection (@nonempty.intro α) $

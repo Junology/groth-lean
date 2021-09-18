@@ -4,6 +4,14 @@ open function
 
 namespace function
 
+--- Dependent analogue of `curry`
+definition dcurry {α : Sort _} {β : α → Sort _} {γ : Π a (b : β a), Sort _} (f : Π a (b : β a), γ a b) : Π (x : sigma β), γ x.fst x.snd :=
+  λ x, f x.fst x.snd
+
+--- Dependent analogue of `uncurry`
+definition duncurry {α : Sort _} {β : α → Sort _} {γ : Π (x : sigma β), Sort _} (f : Π (x : sigma β), γ x) : Π a (b : β a), γ ⟨a,b⟩ :=
+  λ a b, f ⟨a,b⟩
+
 --- Composition of retractions is again a retraction.
 lemma left_inverse_comp {α β γ : Sort _} {gr : γ → β} {g : β → γ} {fr : β → α} {f : α → β} : left_inverse gr g → left_inverse fr f → left_inverse (fr∘ gr) (g∘f) :=
   begin
@@ -52,13 +60,8 @@ lemma has_right_inverse {α β : Sort _} {f : α → β} : has_inverse f → fun
     exact ⟨g,hg.right⟩
   end
 
-#print axioms has_inverse.has_left_inverse
-#print axioms has_inverse.has_right_inverse
-
 lemma bijective {α β : Sort _} {f : α → β} : has_inverse f → bijective f
 | ⟨g, h⟩ := ⟨has_left_inverse.injective ⟨g, h.left⟩, has_right_inverse.surjective ⟨g, h.right⟩⟩
-
-#print axioms has_inverse.bijective
 
 end has_inverse
 

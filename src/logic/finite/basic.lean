@@ -2,7 +2,7 @@ import function.misc
 import function.bijection
 import data.list.misc
 import data.list.map_partial
-import data.finite
+import data.finord
 
 --- Exhaustive list of elements of given type; i.e. a list that contains all the terms of given type with no duplicate entries.
 @[reducible,inline]
@@ -67,14 +67,14 @@ end exhaustive_list
 
 --- Class for types that are isomorphic to `finord n` for some `n`.
 class is_finite (α : Type _) : Prop :=
-  (isom_to_finord : ∃ (n : ℕ), nonempty (bijection α (finord n)))
+  (bij_to_finord : ∃ (n : ℕ) (f : finord n → α), function.bijective f)
 
 instance finord_is_finite {n : ℕ} : is_finite (finord n) :=
-  is_finite.mk ⟨n, nonempty.intro bijection.id⟩
+  is_finite.mk ⟨n, id, bijection.id.is_bijective⟩
 
 @[reducible,inline]
-definition isom_to_finord (α : Type _) [is_finite α] : ∃ (n : ℕ), nonempty (bijection α (finord n)) :=
-  is_finite.isom_to_finord
+definition bij_to_finord (α : Type _) [is_finite α] : ∃ (n : ℕ) (f : finord n → α), function.bijective f :=
+  is_finite.bij_to_finord
 
 namespace is_finite
 
@@ -83,10 +83,9 @@ variables {α : Type _} [is_finite α]
 --- Every finite type admits a complete list of elements.
 lemma has_exhaustive_list : nonempty (exhaustive_list α) :=
   begin
-    cases _root_.isom_to_finord α with n e_f,
-    cases e_f with f,
+    cases _root_.bij_to_finord α with n ef; cases ef with f hf,
     constructor,
-    apply exhaustive_list.translate f.inv_is_bijective,
+    apply exhaustive_list.translate hf,
     exact finord.exhaustive_list n,
   end
 

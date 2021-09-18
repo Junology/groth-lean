@@ -4,6 +4,14 @@ namespace list
 
 open list
 
+@[simp]
+lemma nil_union {α : Type _} [decidable_eq α] {l : list α} : [] ∪ l = l :=
+  rfl
+
+@[simp]
+lemma cons_union {α : Type _} [decidable_eq α] {a : α} {l₁ l₂ : list α} : (a :: l₁) ∪ l₂ = ite (a ∈ l₁ ∪ l₂) (l₁ ∪ l₂) (a :: (l₁ ∪ l₂)) :=
+  rfl
+
 /-!
  * Lemmas around `list.mem`.
 --/
@@ -69,6 +77,67 @@ lemma mem_filter {α : Sort _} {as : list α} {p : α → Prop} [decidable_pred 
           ... ↔ false ∨ (x ∈ as ∧ p x) : or.comm
           ... ↔ (x = a ∧ p x) ∨ (x ∈ as ∧ p x) : or_congr (iff.symm (iff_false_intro this)) (iff.refl _)
           ... ↔ (x = a ∨ x ∈ as) ∧ p x : iff.symm or_and_distrib
+      }
+    }
+  end
+
+lemma mem_of_insert_self {α : Type _} [decidable_eq α] {l : list α} : ∀ x, x ∈ l.insert x :=
+  begin
+    intros x,
+    dunfold list.insert,
+    apply ite_pred_iff.mp,
+    exact ⟨id, (λ _, mem_cons_self x _)⟩
+  end
+
+lemma mem_of_insert_to_mem {α : Type _} [decidable_eq α] {x : α} {l : list α} : x ∈ l → ∀ y, x ∈ l.insert y :=
+  begin
+    intros hx y,
+    dunfold list.insert,
+    apply ite_pred_iff.mp,
+    exact ⟨(λ _, hx), (λ _, mem_cons_of_mem _ hx)⟩
+  end
+
+--- A term is a member of the union of two lists if and only if it is a member of either of the operands.
+lemma mem_union_iff {α : Type _} [decidable_eq α] {l₁ l₂ : list α} {x : α} : x ∈ l₁ ∨ x ∈ l₂ ↔ x ∈ (l₁ ∪ l₂) :=
+  begin
+    split,
+    show x∈ l₁ ∨ x∈ l₂ → x∈ (l₁ ∪ l₂), {
+      intros hx,
+      dsimp [has_union.union, list.union] at *,
+      cases hx,
+      case or.inl /- x ∈ l₁ -/ {
+        induction l₁ with a tl h_ind,
+        case nil { exfalso; exact not_mem_nil x hx },
+        dsimp [has_insert.insert] at *,
+        cases hx,
+        case or.inl /- x = a -/ {
+          rw [hx], exact mem_of_insert_self _
+        },
+        case or.inr /- x ∈ tl -/ {
+          exact mem_of_insert_to_mem (h_ind hx) _
+        }
+      },
+      case or.inr /- x ∈ l₂ -/ {
+        induction l₁ with a tl h_ind,
+        case nil { exact hx },
+        dunfold foldr; dsimp [has_insert.insert],
+        exact mem_of_insert_to_mem h_ind _
+      }
+    },
+    show x ∈ (l₁ ∪ l₂) → x ∈ l₁ ∨ x ∈ l₂, {
+      intros hx,
+      induction l₁ with a tl h_ind,
+      case nil { exact or.inr hx },
+      case cons {
+        rw [cons_union] at hx,
+        cases whether_of_ite hx,
+        case or.inl {
+          exact (h_ind h).elim (or.inl ∘ mem_cons_of_mem a) or.inr
+        },
+        case or.inr {
+          apply or.assoc.mpr,
+          exact or.imp_right h_ind h,
+        }
       }
     }
   end
@@ -167,6 +236,26 @@ lemma nodup_filter {α : Sort _} {p : α → Prop} [decidable_pred p] : ∀ {l},
     focus /- ¬p a -/ {
       rw [ite_eval_false h],
       exact nodup_filter has
+    }
+  end
+
+--- The union of two lists without duplicates has no duplicate members.
+lemma nodup_union {α : Type _} [decidable_eq α] {l₁ l₂ : list α} : l₁.nodup → l₂.nodup → (l₁ ∪ l₂).nodup :=
+  begin
+    intros hnodup₁ hnodup₂,
+    induction l₁ with a tl h_ind,
+    case nil { rw [nil_union]; exact hnodup₂ },
+    case cons {
+      rw [cons_union],
+      apply ite_pred_iff.mp; split,
+      show a ∈ tl ∪ l₂ → _, {
+        intros ha,
+        exact h_ind (nodup_tail hnodup₁)
+      },
+      show a ∉ tl ∪ l₂ → _, {
+        intros ha,
+        exact nodup.cons ha (h_ind (nodup_tail hnodup₁))
+      }
     }
   end
 

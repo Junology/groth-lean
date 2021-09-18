@@ -3,6 +3,33 @@
 lemma eq_irrel {α : Sort _} : ∀ {x y : α} (hxy : x = y), hxy == @rfl α x
 | _ _ rfl := heq.rfl
 
+--- Eliminator of `ite` of predicators.
+lemma ite_pred_iff {α : Sort _} {p : Prop} [decidable p] {P : α → Prop} : ∀ {x y}, (p → P x) ∧ (¬p → P y) ↔ P (ite p x y) :=
+  begin
+    intros x y,
+    split,
+    show _ → P (ite p x y), {
+      intros hxy,
+      by_cases p,
+      rw [if_pos h]; exact hxy.left h,
+      rw [if_neg h]; exact hxy.right h
+    },
+    show P (ite p x y) → _, {
+      intros hP,
+      by_cases p,
+      rw [if_pos h] at hP; exact ⟨(λ _,hP),λ hn, false.elim (hn h)⟩,
+      rw [if_neg h] at hP; exact ⟨false.elim ∘ h, (λ_,hP)⟩
+    }
+  end
+
+lemma whether_of_ite {α : Sort _} {p : Prop} [decidable p] {P : α → Prop} : ∀ {x y}, P (ite p x y) → P x ∨ P y :=
+  begin
+    intros x y hP,
+    by_cases p,
+    rw [if_pos h] at hP; exact or.inl hP,
+    rw [if_neg h] at hP; exact or.inr hP
+  end
+
 attribute [simp]
 definition ite_eval_true {p : Prop} [pdec : decidable p] {α : Type*} : p → ∀ (a b : α), ite p a b = a :=
   begin

@@ -62,33 +62,6 @@ definition translate {α β : Type _} {f : α → β} : function.bijective f →
       }
     end
 
---- If `α` has an `exhaustive_list`, then each decidable subtype of `α` does.
-protected
-definition subtype {α : Type _} (l : exhaustive_list α) (p : α → Prop) [decidable_pred p] : exhaustive_list (subtype p) :=
-  subtype.mk (l.val.filter_to_subtype p) $
-    begin
-      split,
-      exact list.nodup_map_partial_of_nodup (function.partial.coinj_inj) l.property.left,
-      intros x,
-      have hx : (function.partial.coinj p).is_defined_at x.val,
-        from (function.partial.coinj_domain x.val).mpr x.property,
-      have : x = (function.partial.coinj p).to_fun ⟨x.val,hx⟩, {
-        symmetry,
-        suffices : function.partial.coinj p x.val = some x,
-          from (function.partial.coinj p).to_fun_value_of_eq this,
-        cases hinjx : function.partial.coinj p x.val with y,
-        exfalso; exact hx hinjx,
-        dunfold function.partial.coinj at hinjx,
-        rw [dif_pos x.property] at hinjx,
-        apply congr_arg some; apply subtype.eq,
-        let hyxval := congr_arg subtype.val (option.some.inj hinjx.symm),
-        exact hyxval,
-      },
-      rw [this],
-      refine list.mem_map_partial_of_mem _ _ _,
-      exact l.property.right _
-    end
-
 end exhaustive_list
 
 

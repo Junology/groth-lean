@@ -1,6 +1,29 @@
 
 namespace subtype
 
+--- Relax the restriction on subtypes.
+definition relax {α : Sort _} {p q : α → Prop} (f : ∀ a, p a → q a) : subtype p → subtype q :=
+  λ x, subtype.cases_on x (λ a h, ⟨a, f a h⟩)
+
+protected
+definition inl {α : Sort _} {p q : α → Prop} : subtype p → subtype (λ a, p a ∨ q a) := relax (λ _, or.inl)
+
+protected
+definition inr {α : Sort _} {p q : α → Prop} : subtype q → subtype (λ a, p a ∨ q a) := relax (λ _, or.inr)
+
+--- `relax` doesn't change the value.
+lemma val_relax {α : Sort _} {p q : α → Prop} {f : ∀ a, p a → q a} : ∀ (x : subtype p), (x.relax f).val = x.val :=
+  by intros x; cases x; refl
+
+--- `relax` is injective function
+lemma relax_inj {α : Type _} {p q : α → Prop} {f : ∀ a, p a → q a} : function.injective (relax f) :=
+  begin
+    intros x y,
+    cases x; cases y; dunfold relax,
+    dsimp *,
+    exact subtype.eq ∘ congr_arg subtype.val
+  end
+
 --- Mapping into subtype yields a mapping into the underlying codomain all whose values belong to the subtype.
 definition codomain {α β : Sort _} {p : β → Prop} (f : α → {b // p b}) : {f : α → β // ∀ a, p (f a)} :=
   ⟨subtype.val∘ f, λ a, (f a).property⟩

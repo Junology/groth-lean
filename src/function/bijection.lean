@@ -85,6 +85,41 @@ definition inverse {α β : Sort _} (f : bijection α β) : bijection β α :=
   right_inverse := f.left_inverse
 }
 
+--- The subtype `{a : α // true}` is isomorphic to `α` itself.
+definition subtype_true (α : Sort _) : bijection {x : α // true} α :=
+{
+  to_fun := subtype.val,
+  inv := λ x, ⟨x, true.intro⟩,
+  left_inverse := λ x, by cases x; refl,
+  right_inverse := @rfl α
+}
+
+--- The subtypes classified by equivalent propositions are isomorphic.
+definition subtype_equiv {α : Sort _} {p q : α → Prop} (hpq: ∀ x, p x ↔ q x) : bijection (subtype p) (subtype q) :=
+{
+  to_fun := λ x, subtype.rec_on x (λ a h, ⟨a, iff.mp (hpq a) h⟩),
+  inv := λ x, subtype.rec_on x (λ a h, ⟨a, iff.mpr (hpq a) h⟩),
+  left_inverse := λ x, by cases x; refl,
+  right_inverse := λ x, by cases x; refl
+}
+
+--- Subtypes of a subtype is just a subtype of the root type.
+definition subtype_uncurry {α : Sort _} {p q : α → Prop} : bijection {x : subtype p // q x.val} {x : α // p x ∧ q x} :=
+{
+  to_fun := λ x, ⟨x.val.val, ⟨x.val.property, x.property⟩⟩,
+  inv := λ x, ⟨⟨x.val,x.property.left⟩,x.property.right⟩,
+  left_inverse := λ x, by cases x; cases x_val; refl,
+  right_inverse := λ x, by cases x; refl
+}
+
+--- Subtypes of a subtype is just a subtype of the root type.
+definition subtype_curry {α : Sort _} {p q : α → Prop} : bijection {x : α // p x ∧ q x} {x : subtype p // q x.val} :=
+{
+  to_fun := λ x, ⟨⟨x.val,x.property.left⟩,x.property.right⟩,
+  inv := λ x, ⟨x.val.val, ⟨x.val.property, x.property⟩⟩,
+  left_inverse := λ x, by cases x; refl,
+  right_inverse := λ x, by cases x; cases x_val; refl
+}
 
 /- In the following, we use `funext` and `definite_description`. -/
 namespace unsafe

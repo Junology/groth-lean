@@ -2,7 +2,7 @@ import function.misc
 import function.bijection
 import data.list.misc
 import data.list.map_partial
-import data.list.to_fun
+import data.list.index
 import data.finord
 
 --- Exhaustive list of elements of given type; i.e. a list that contains all the terms of given type with no duplicate entries.
@@ -63,48 +63,72 @@ definition translate {α β : Type _} {f : α → β} : function.bijective f →
       }
     end
 
+--- Convert an `exhaustive_list` into a bijection out of a finite set.
+protected
+definition to_bijection {α : Type _} [decidable_eq α] (l : exhaustive_list α) : bijection (finord l.val.length) α :=
+  (bijection.subtype_true α).comp $
+    bijection.comp
+      (@bijection.subtype_equiv _ (λ x, x ∈ l.val) (λ _, true) (λ x, iff_true_intro (l.property.right x)))
+      (list.enum_bijection l.property.left)
+
 end exhaustive_list
 
 
 --- Class for types that are isomorphic to `finord n` for some `n`.
 class is_finite (α : Type _) : Prop :=
-  (bij_to_finord : ∃ (n : ℕ) (f : finord n → α), function.bijective f)
+  (enumerable : ∃ (n : ℕ) (f : finord n → α), function.bijective f)
 
 instance finord_is_finite {n : ℕ} : is_finite (finord n) :=
   is_finite.mk ⟨n, id, bijection.id.is_bijective⟩
 
 @[reducible,inline]
-definition bij_to_finord (α : Type _) [is_finite α] : ∃ (n : ℕ) (f : finord n → α), function.bijective f :=
-  is_finite.bij_to_finord
+definition enumerable (α : Type _) [is_finite α] : ∃ (n : ℕ) (f : finord n → α), function.bijective f :=
+  is_finite.enumerable
 
 namespace is_finite
 
-variables {α : Type _} [is_finite α]
+--- Every finite type must be internally decidable.
+protected
+lemma has_idecidable_eq {α : Type _} [is_finite α] : idecidable_eq α :=
+  begin
+    intros x y,
+    constructor,
+    cases _root_.enumerable α with n ef; cases ef with f hf,
+    cases hf.right x with a ha,
+    cases hf.right y with b hb,
+    refine dite (a=b) _ _,
+    show a = b → _, {
+      intros hab,
+      apply or.inl,
+      calc
+        x   = f a : ha.symm
+        ... = f b : congr_arg f hab
+        ... = y : hb
+    },
+    show a ≠ b → _, {
+      intros hab,
+      apply or.inr,
+      intros hxy,
+      refine hab (hf.left _),
+      calc
+        f a = x : ha
+        ... = y : hxy
+        ... = f b : hb.symm
+    }
+  end
 
 --- Every finite type admits a complete list of elements.
-lemma has_exhaustive_list : nonempty (exhaustive_list α) :=
+lemma has_exhaustive_list (α : Type _) [is_finite α] : nonempty (exhaustive_list α) :=
   begin
-    cases _root_.bij_to_finord α with n ef; cases ef with f hf,
+    cases _root_.enumerable α with n ef; cases ef with f hf,
     constructor,
     apply exhaustive_list.translate hf,
     exact finord.exhaustive_list n,
   end
 
 --- Given `exhausitve_list α`, one can conclude `α` is a finite type.
-theorem is_finite_of_exhaustive_list {α : Type _} (l : exhaustive_list α) : is_finite α :=
-  begin
-    constructor,
-    existsi l.val.length,
-    existsi l.val.to_fun,
-    split,
-    show function.injective _, {
-      exact list.to_fun_injective_of_nodup l.property.left
-    },
-    show function.surjective _, {
-      intros y,
-      cases l.val.to_fun_value_of_mem (l.property.right y) with a ha,
-      exact ⟨a, ha.symm⟩
-    }
-  end
+protected
+theorem of_exhaustive_list {α : Type _} [decidable_eq α] (l : exhaustive_list α) : is_finite α :=
+  is_finite.mk ⟨l.val.length, l.to_bijection.to_fun, l.to_bijection.is_bijective⟩
 
 end is_finite

@@ -77,3 +77,10 @@ definition union {α : Type _} [decidable_eq α] {p q : α → Prop} (lp : exhau
     end
 
 end exhaustive_list
+
+--- Decidable subtypes of a finite type is finite.
+instance is_finite_decsub {α : Type _} [decidable_eq α] [is_finite α] {p : α → Prop} [decidable_pred p] : is_finite (subtype p) :=
+  begin
+    cases is_finite.has_exhaustive_list α with l,
+    exact is_finite.of_exhaustive_list (l.restrict p)
+  end

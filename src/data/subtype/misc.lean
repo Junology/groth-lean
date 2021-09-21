@@ -1,6 +1,10 @@
 
 namespace subtype
 
+--- `subtype.val` is injective
+lemma val_injective {α : Type _} {p : α → Prop} : function.injective (@subtype.val α p) :=
+  @subtype.eq α p
+
 --- Relax the restriction on subtypes.
 definition relax {α : Sort _} {p q : α → Prop} (f : ∀ a, p a → q a) : subtype p → subtype q :=
   λ x, subtype.cases_on x (λ a h, ⟨a, f a h⟩)
@@ -14,6 +18,12 @@ definition inr {α : Sort _} {p q : α → Prop} : subtype q → subtype (λ a, 
 --- `relax` doesn't change the value.
 lemma val_relax {α : Sort _} {p q : α → Prop} {f : ∀ a, p a → q a} : ∀ (x : subtype p), (x.relax f).val = x.val :=
   by intros x; cases x; refl
+
+--- `inl` doesn't change the value.
+lemma val_inl {α : Sort _} {p q : α → Prop} : ∀ (x : subtype p), (@subtype.inl _ p q x).val = x.val := λ x, by cases x; refl
+
+--- `inr` doesn't change the value.
+lemma val_inr {α : Sort _} {p q : α → Prop} : ∀ (x : subtype q), (@subtype.inr _ p q x).val = x.val := λ x, by cases x; refl
 
 --- `relax` is injective function
 lemma relax_inj {α : Type _} {p q : α → Prop} {f : ∀ a, p a → q a} : function.injective (relax f) :=

@@ -1,8 +1,64 @@
 import logic.misc
+import tactic.unirewrite
 
 namespace list
 
 open list
+
+--- The result of `map f` is the same as that of `map g` provided `f` and `g` are pointwisely the same.
+lemma map_equiv {α β : Type _} {f g : α → β} {l : list α} : (∀ x, f x = g x) → l.map f = l.map g :=
+  begin
+    intros hfg,
+    induction l with a tl h_ind,
+    case nil { refl },
+    case cons {
+      dunfold map,
+      rw [hfg,h_ind]
+    }
+  end
+
+--- `filter` after `map` yields `map` of `filter`.
+lemma filter_of_map {α β : Type _} {f : α → β} {p : β → Prop} [decidable_pred p] {l : list α} : filter p (l.map f) = map f (l.filter (p∘ f)) :=
+  begin
+    induction l with a tl h_ind,
+    case nil { refl },
+    case cons {
+      dsimp [list.map,list.filter],
+      refine dite (p (f a)) _ _,
+      show p (f a) → _, {
+        intros hpfa,
+        repeat { rw [if_pos hpfa] },
+        dsimp [map],
+        rw [h_ind]
+      },
+      show ¬p (f a) → _, {
+        intros hnpfa,
+        repeat { rw [if_neg hnpfa] },
+        rw [h_ind]
+      }
+    }
+  end
+
+--- `propext`-free version of `list.partition_eq_filter_filter`
+lemma partition_eq_filter_filter_safe {α : Type _} (p : α → Prop) [decidable_pred p] (l : list α) : l.partition p = (l.filter p, l.filter (not∘ p)) :=
+  begin
+    induction l with a tl h_ind,
+    case nil { refl },
+    case cons {
+      dunfold partition filter,
+      rw [h_ind],
+      dunfold partition._match_1,
+      refine dite (p a) _ _,
+      show p a → _, {
+        intros hpa,
+        rw [if_pos hpa, if_pos hpa, if_neg (not_not_intro hpa)]
+      },
+      show ¬p a → _, {
+        intros hnpa,
+        rw [if_neg hnpa, if_neg hnpa, if_pos hnpa]
+      }
+    }
+  end
 
 @[simp]
 lemma nil_union {α : Type _} [decidable_eq α] {l : list α} : [] ∪ l = l :=
@@ -142,6 +198,18 @@ lemma mem_union_iff {α : Type _} [decidable_eq α] {l₁ l₂ : list α} {x : �
     }
   end
 
+--- Special case of `cons_union` with `nodup` the first operand.
+lemma not_mem_cons_union {α : Type _} [decidable_eq α] {a : α} {l₁ l₂ : list α} : a ∉ l₁ → (a :: l₁) ∪ l₂ = ite (a ∈ l₂) (l₁ ∪ l₂) (a :: (l₁ ∪ l₂)) :=
+  begin
+    intros hal₁,
+    rw [list.cons_union],
+    refine if_congr _ rfl rfl,
+    calc
+      a ∈ l₁ ∪ l₂
+          ↔ a ∈ l₁ ∨ a ∈ l₂ : mem_union_iff.symm
+      ... ↔ a ∈ l₂ : or_iff_right_of_imp (false.elim ∘ hal₁)
+  end
+
 --- `map f` respects the membership relation.
 lemma mem_map_of_mem {α β : Type _} {f : α → β} : ∀ (x : α) (l : list α), x ∈ l → f x ∈ l.map f
 | x [] h := false.elim $ not_mem_nil x h
@@ -166,6 +234,23 @@ lemma not_mem_map_of_offimage {α β : Type _} {f : α → β} (y : β) : (∀ x
 | _ [] := not_mem_nil y
 | hy (a::as) :=
   λ h, or.elim h (λ h, hy a h.symm) (not_mem_map_of_offimage hy)
+
+--- If `y` is a member of `map f l`, then `y` can be written in the form `y = f x` with `x ∈ l`.
+lemma inverse_of_mem_map {α β : Type _} {f : α → β} {y : β} (l : list α) : y ∈ map f l → ∃ x, y = f x :=
+  begin
+    induction l with a tl h_ind,
+    case nil {
+      intro hy,
+      exfalso; exact not_mem_nil _ hy
+    },
+    case cons {
+      dunfold map,
+      intros hy,
+      cases hy,
+      case or.inl { exact ⟨a,hy⟩ },
+      case or.inr { exact h_ind hy },
+    }
+  end
 
 --- If `list` has no member, then it is `nil`.
 lemma is_nil_of_no_mem {α : Sort _} : ∀ {l : list α}, (∀ x, x ∉ l) → l = []
@@ -193,6 +278,39 @@ lemma subset_nil {α : Sort _} {l : list α} : l.subset [] → l = [] :=
     },
   end
 
+--- `map f` commutes with `union` provided `f` is injective.
+lemma union_of_map_inj {α β: Type _} [decidable_eq α] [decidable_eq β] {f : α → β} {l₁ l₂ : list α} : function.injective f → map f (l₁ ∪ l₂) = (map f l₁) ∪ (map f l₂) :=
+  begin
+    intros hinj,
+    induction l₁ with a tl h_ind,
+    case nil { refl },
+    case cons {
+      dunfold map,
+      rw [cons_union, cons_union],
+      refine dite (a ∈ tl ∪ l₂) _ _,
+      show (a ∈ tl ∪ l₂) → _, {
+        intros ha,
+        rw [if_pos ha],
+        have : f a ∈ map f tl ∪ map f l₂,
+          by rw [←h_ind]; exact mem_map_of_mem a _ ha,
+        rw [if_pos this],
+        exact h_ind
+      },
+      show (a ∉ tl ∪ l₂) → _, {
+        intros hna,
+        rw [if_neg hna],
+        have : f a ∉ map f tl ∪ map f l₂, {
+          intro hfa,
+          exfalso; apply hna,
+          rw [←h_ind] at hfa,
+          apply mem_of_mem_map hinj _ _ hfa
+        },
+        rw [if_neg this],
+        dunfold map,
+        rw [h_ind]
+      }
+    }
+  end
 
 /-!
  * No duplicates; based on `list.nodup` in `mathlib`.
@@ -259,6 +377,24 @@ lemma nodup_union {α : Type _} [decidable_eq α] {l₁ l₂ : list α} : l₁.n
     }
   end
 
+--- `union` is exactly `append` as soon as the first operand is `nodup`
+lemma nodup.disjoint_union {α : Type _} [decidable_eq α] {l₁ l₂ : list α} : l₁.nodup → (∀ x, x ∈ l₁ → x∉ l₂) → l₁ ∪ l₂ = l₁ ++ l₂ :=
+  begin
+    intros hnodup₁ hdisj,
+    induction l₁ with a tl h_ind,
+    case nil { refl },
+    case cons {
+      rw [not_mem_cons_union (nodup_head hnodup₁)],
+      rw [if_neg (hdisj a (mem_cons_self a _))],
+      have : ∀ x, x ∈ tl → x ∉ l₂,
+        from λ x hx, hdisj x (mem_cons_of_mem a hx),
+      rw [h_ind (nodup_tail hnodup₁) this],
+      refl
+    }
+  end
+
+#print axioms nodup.disjoint_union
+
 --- `map f` reflects `nodup`.
 lemma nodup_of_nodup_map {α β : Type _} {f : α → β} : ∀ {l : list α}, nodup (l.map f) → nodup l
 | [] _ := nodup.nil
@@ -311,6 +447,28 @@ lemma symm {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : perm l
     (λ _ _ _ , perm.head)
     (λ l₁ l₂ l₃ _ _ h₂ h₁, perm.trans h₁ h₂)
 
+protected
+lemma middle {α : Type _} {a : α} {l₁ l₂ : list α} : perm (l₁ ++ (a :: l₂)) (a :: (l₁ ++ l₂)) :=
+  begin
+    induction l₁ with b tl h_ind,
+    case nil { refl },
+    case cons {
+      dsimp [list.append],
+      exact perm.trans perm.head h_ind.cons
+    }
+  end
+
+--- `map f` repsects the relation `perm`.
+protected
+lemma map {α β : Type _} {l₁ l₂ : list α} (f : α → β) (hperm : perm l₁ l₂) : perm (l₁.map f) (l₂.map f) :=
+  begin
+    induction hperm with a tl₁ tl₂ hperm_tl h_ind a b tl lx ly lz hyz hxy hfyz hfxy,
+    case nil { exact perm.nil },
+    case cons { dunfold map, exact perm.cons h_ind },
+    case head { dunfold map, exact perm.head },
+    case trans { exact perm.trans hfyz hfxy }
+  end
+
 --- `perm l₁ l₂` implies that `l₂` contains `l₁`.
 protected
 lemma subset {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : l₁.subset l₂ :=
@@ -327,6 +485,7 @@ lemma subset {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : l₁
       λ l₁ l₂ l₃ _ _ hleft hright a, hleft a ∘ hright a
     )
 
+--- `perm l₁ l₂` implies that their membership relations are equivalent.
 protected
 lemma mem_iff {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : ∀ a, a ∈ l₁ ↔ a ∈ l₂ :=
   λ _, ⟨λ h, hperm.subset h, λ h, hperm.symm.subset h⟩
@@ -335,6 +494,31 @@ lemma mem_iff {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : ∀
 protected
 lemma not_mem {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : ∀ a, a ∉ l₁ → a ∉ l₂ :=
   λ _ hl₁ hl₂, hl₁ (perm.subset hperm.symm hl₂)
+
+--- `append` of `partition` yields the original `list` up to permutation.
+protected
+lemma append_partition {α : Type _} {l : list α} {p : α → Prop} [decidable_pred p] : perm (function.uncurry list.append (l.partition p)) l :=
+  begin
+    rw [partition_eq_filter_filter_safe],
+    dsimp [function.uncurry],
+    induction l with a tl h_ind,
+    case nil { refl },
+    case cons {
+      dunfold filter,
+      refine dite (p a) _ _,
+      show p a → _, {
+        intros hpa,
+        rw [if_pos hpa, if_neg (not_not_intro hpa)],
+        dunfold list.append,
+        exact perm.cons h_ind
+      },
+      show ¬p a → _, {
+        intros hnpa,
+        rw [if_neg hnpa, if_pos hnpa],
+        exact perm.trans (perm.cons h_ind) perm.middle
+      }
+    }
+  end
 
 end perm
 

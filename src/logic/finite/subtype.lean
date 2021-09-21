@@ -231,7 +231,7 @@ lemma union_underlying {α : Type _} [decidable_eq α] {p q : α → Prop} {lp :
     rw [list.map_equiv subtype.val_inr]
   end
 
---- The underlying list of `union` of `exhaustive_list`s for two subtypes are disjoint.
+--- The underlying list of `union` of `exhaustive_list`s for two disjoint subtypes.
 protected
 lemma disjoint_union_underlying {α : Type _} [decidable_eq α] {p q : α → Prop} {lp : exhaustive_list (subtype p)} {lq : exhaustive_list (subtype q)} : (∀ x, ¬(p x ∧ q x)) → (lp.union lq).underlying = lp.underlying ++ lq.underlying :=
   begin

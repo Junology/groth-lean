@@ -10,7 +10,7 @@ import .basic
 namespace exhaustive_list
 
 --- Forget proofs to exhibit an `exhaustive_list` on a subtype of `α` as a list of `α`.
-@[reducible]
+@[reducible,inline]
 protected
 definition underlying {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) : list α :=
   l.val.map subtype.val
@@ -53,6 +53,7 @@ lemma underlying_perm {α : Type _} {p : α → Prop} (l₁ l₂ : exhaustive_li
   list.perm.map subtype.val (l₁.perm l₂)
 
 --- The empty list is exhaustive on empty subtypes.
+@[reducible]
 protected
 definition of_empty {α : Type _} {p : α → Prop} (h : ∀ a, ¬p a) : exhaustive_list (subtype p) :=
   subtype.mk [] $
@@ -72,6 +73,15 @@ lemma is_empty {α : Type _} {p : α → Prop} (h : ∀ a, ¬p a) (l : exhaustiv
     exact h x.val x.property
   end
 
+--- The underlying `list` of `exhaustive_list` of empty subtype is `nil`.
+protected
+lemma of_empty_underlying {α : Type _} {p : α → Prop} (h : ∀ a, ¬p a) (l : exhaustive_list (subtype p)) : l.underlying = [] :=
+  begin
+    dunfold exhaustive_list.underlying,
+    rw [l.is_empty h],
+    refl
+  end
+
 --- `exhaustive_list`s of two subtypes classified by eqiuvalent predicators can be translated to one another.
 @[reducible]
 protected
@@ -79,8 +89,9 @@ definition of_iff {α : Type _} {p q : α → Prop} (h : ∀ a, p a ↔ q a) (l 
   l.translate (bijection.subtype_equiv h).is_bijective
 
 --- Equivalent condition translation of `exhaustive_list` does nothing on the underlying `list`.
+@[simp]
 protected
-definition of_iff_underlying {α : Type _} {p q : α → Prop} {h : ∀ a, p a  ↔ q a} (l : exhaustive_list (subtype p)) : (l.of_iff h).underlying = l.underlying:=
+lemma of_iff_underlying {α : Type _} {p q : α → Prop} (h : ∀ a, p a  ↔ q a) (l : exhaustive_list (subtype p)) : (l.of_iff h).underlying = l.underlying:=
   begin
     dsimp [
       exhaustive_list.of_iff,
@@ -88,11 +99,12 @@ definition of_iff_underlying {α : Type _} {p q : α → Prop} {h : ∀ a, p a  
       bijection.subtype_equiv,
       exhaustive_list.underlying
     ],
-    rw [list.map_map],
+    rw [list.map_map_safe],
     exact list.map_equiv (by intros x; cases x; refl)
   end
 
 --- If `α` has an `exhaustive_list`, then each decidable subtype of `α` does.
+@[reducible]
 protected
 definition restrict {α : Type _} (l : exhaustive_list α) (p : α → Prop) [decidable_pred p] : exhaustive_list (subtype p) :=
   subtype.mk (l.val.filter_to_subtype p) $
@@ -120,6 +132,7 @@ definition restrict {α : Type _} (l : exhaustive_list α) (p : α → Prop) [de
     end
 
 --- `exhaustive_list.restrict` is nothing but `filter` on the underlying `list`.
+@[simp]
 protected
 lemma restrict_underlying {α : Type _} (l : exhaustive_list α) {p : α → Prop} [decidable_pred p] : (l.restrict p).underlying = l.val.filter p :=
   begin
@@ -129,61 +142,67 @@ lemma restrict_underlying {α : Type _} (l : exhaustive_list α) {p : α → Pro
   end
 
 --- Restrict an `exhaustive_list` on a subtype to a smaller subtype.
+@[simp]
 protected
 definition subrestrict {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) (q : α → Prop) [decidable_pred q] : exhaustive_list {x // p x ∧ q x} :=
   let l' := (l.restrict (q ∘ subtype.val))
   in l'.translate bijection.subtype_uncurry.is_bijective
 
 --- `exhaustive_list.subrestrict` is nothing but `filter` on the underlying `list`.
+@[simp]
 protected
-lemma subrestrict_underlying {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) {q : α → Prop} [decidable_pred q] : (l.subrestrict q).underlying = l.underlying.filter q :=
+lemma subrestrict_underlying {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) (q : α → Prop) [decidable_pred q] : (l.subrestrict q).underlying = l.underlying.filter q :=
   begin
     dsimp [exhaustive_list.subrestrict],
     dsimp [exhaustive_list.translate],
     dsimp [bijection.subtype_uncurry],
     dsimp [exhaustive_list.underlying],
-    dunfold exhaustive_list.restrict,
-    rw [list.map_map]; dsimp *,
+    rw [list.map_map_safe],
     dunfold function.comp; dsimp *,
     have : ∀ (x : {x : subtype p // q x.val}), x.val.val = (subtype.val ∘ subtype.val) x,
       by intros; refl,
     rw [list.map_equiv this]; dsimp *,
-    rw [←list.map_map],
+    rw [←list.map_map_safe],
     rw [list.val_of_filter_to_subtype],
     rw [list.filter_of_map]
   end
 
 --- Partitioning an `exhaustive_list α` with a decidable predicator `p : α → Prop`.
+@[reducible]
 protected
 definition partition {α : Type _} (p : α → Prop) [decidable_pred p] (l : exhaustive_list α) : exhaustive_list (subtype p) × exhaustive_list {x // ¬p x} :=
   (l.restrict p, l.restrict (not ∘ p))
 
 --- Underlying lists of partitioned `exhaustive_list`.
+@[simp]
 protected
 lemma partition_underlying {α : Type _} {p : α → Prop} [decidable_pred p] {l : exhaustive_list α} : (l.partition p).map exhaustive_list.underlying exhaustive_list.underlying = l.val.partition p :=
   begin
     dunfold exhaustive_list.partition,
     dunfold prod.map,
     repeat { rw [exhaustive_list.restrict_underlying] },
-    rw [list.partition_eq_filter_filter]
+    rw [list.partition_eq_filter_filter_safe]
   end
 
 --- Partitioning an `exhaustive_list` on a subtype with a decidable predicator `p`.
+@[reducible]
 protected
 definition subpartition {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) (q : α → Prop) [decidable_pred q] : exhaustive_list {x // p x ∧ q x} × exhaustive_list {x // p x ∧ ¬q x} :=
   (l.subrestrict q, l.subrestrict (not ∘ q))
 
 --- Underlying lists of partitioned `exhaustive_list`.
+@[simp]
 protected
 lemma subpartition_underlying {α : Type _} {p : α → Prop} {l : exhaustive_list (subtype p)} {q : α → Prop} [decidable_pred q]: (l.subpartition q).map exhaustive_list.underlying exhaustive_list.underlying = l.underlying.partition q :=
   begin
     dunfold exhaustive_list.subpartition,
     dunfold prod.map,
     repeat { rw [exhaustive_list.subrestrict_underlying] },
-    rw [list.partition_eq_filter_filter],
+    rw [list.partition_eq_filter_filter_safe],
   end
 
 --- If two subtypes respectively admit exhaustive lists, then so does their union.
+@[reducible]
 protected
 definition union {α : Type _} [decidable_eq α] {p q : α → Prop} (lp : exhaustive_list (subtype p)) (lq : exhaustive_list (subtype q)) : exhaustive_list {x // p x ∨ q x} :=
   subtype.mk
@@ -219,6 +238,7 @@ definition union {α : Type _} [decidable_eq α] {p q : α → Prop} (lp : exhau
     end
 
 --- The underlying list of `union` of `exhaustive_list`s.
+@[simp]
 protected
 lemma union_underlying {α : Type _} [decidable_eq α] {p q : α → Prop} {lp : exhaustive_list (subtype p)} {lq : exhaustive_list (subtype q)} : (lp.union lq).underlying = lp.underlying ∪ lq.underlying :=
   begin
@@ -226,12 +246,13 @@ lemma union_underlying {α : Type _} [decidable_eq α] {p q : α → Prop} {lp :
     dsimp [exhaustive_list.union, exhaustive_list.underlying],
     drefold @has_union.union (list {x // p x ∨ q x}) _,
     rw [list.union_of_map_inj (@subtype.val_injective α _)],
-    rw [list.map_map, list.map_map],
+    rw [list.map_map_safe, list.map_map_safe],
     rw [list.map_equiv subtype.val_inl],
     rw [list.map_equiv subtype.val_inr]
   end
 
 --- The underlying list of `union` of `exhaustive_list`s for two disjoint subtypes.
+@[simp]
 protected
 lemma disjoint_union_underlying {α : Type _} [decidable_eq α] {p q : α → Prop} {lp : exhaustive_list (subtype p)} {lq : exhaustive_list (subtype q)} : (∀ x, ¬(p x ∧ q x)) → (lp.union lq).underlying = lp.underlying ++ lq.underlying :=
   begin

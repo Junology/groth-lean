@@ -5,6 +5,17 @@ namespace list
 
 open list
 
+--- `propext`-free version of `list.map_map`
+lemma map_map_safe {α β γ : Type _} (g : β → γ) (f : α → β) (l : list α) : map g (map f l) = map (g∘ f) l :=
+  begin
+    induction l with a tl h_ind,
+    case nil { refl },
+    case cons {
+      dunfold map,
+      rw [h_ind]
+    }
+  end
+
 --- The result of `map f` is the same as that of `map g` provided `f` and `g` are pointwisely the same.
 lemma map_equiv {α β : Type _} {f g : α → β} {l : list α} : (∀ x, f x = g x) → l.map f = l.map g :=
   begin
@@ -497,7 +508,7 @@ lemma not_mem {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : ∀
 
 --- `append` of `partition` yields the original `list` up to permutation.
 protected
-lemma append_partition {α : Type _} {l : list α} {p : α → Prop} [decidable_pred p] : perm (function.uncurry list.append (l.partition p)) l :=
+lemma append_partition {α : Type _} (p : α → Prop) [decidable_pred p] (l : list α) : perm (function.uncurry list.append (l.partition p)) l :=
   begin
     rw [partition_eq_filter_filter_safe],
     dsimp [function.uncurry],

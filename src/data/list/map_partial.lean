@@ -25,6 +25,31 @@ lemma map_partial_cons {α β : Type _} {f : α ↝ β} {a : α} {tl : list α} 
 definition filter_to_subtype {α : Sort _} (p : α → Prop) [decidable_pred p] (l : list α) : list (subtype p) :=
   l.map_partial (function.partial.coinj p)
 
+--- `filter_to_subtype` is nothing but `filter` if one forgets the `property` part.
+@[simp]
+lemma val_of_filter_to_subtype {α : Sort _} {p : α → Prop} [decidable_pred p] {l : list α} : map subtype.val (l.filter_to_subtype p) = l.filter p :=
+  begin
+    induction l with a tl h_ind,
+    case nil { refl },
+    case cons {
+      intros,
+      dsimp [filter_to_subtype,filter,function.partial.coinj] at *,
+      refine dite (p a) _ _,
+      show p a → _, {
+        intros hpa,
+        rw [dif_pos hpa,if_pos hpa],
+        dsimp *,
+        rw [h_ind]
+      },
+      show ¬p a → _, {
+        intros hnpa,
+        rw [dif_neg hnpa,if_neg hnpa],
+        dsimp *,
+        rw [h_ind]
+      }
+    }
+  end
+
 --- Partial maps respect the membership relation on the domain.
 lemma mem_map_partial_of_mem {α β : Type _} {f : α ↝ β} : ∀ (x : f.domain) (l : list α), x.val ∈ l → f.to_fun x ∈ l.map_partial f :=
   begin

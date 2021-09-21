@@ -41,7 +41,7 @@ definition inv_is_morphism (α β : Type _) [model binary_module α] [model bina
           dsimp [vect.map],
           rw [hfs.left,hfs.right.left],
           dsimp [vect.map],
-          exact add_self _
+          exact binary_module.add_self _
         },
         case ops.add {
           cases as with _ a as; cases as with _ b bs; cases bs,

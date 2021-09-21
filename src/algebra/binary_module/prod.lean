@@ -42,8 +42,6 @@ lemma pair_is_sum {α β : Type _} [model binary_module α] [model binary_module
     rw [hfst,hsnd],
   end
 
-#print axioms pair_is_sum
-
 
 /-!
  * Proof of the fact that the product of models of `binary_module` is simultaneously a coproduct.
@@ -83,8 +81,6 @@ theorem co_zip_of_co_unzip_ptwise {α β γ : Type _} [model binary_module α] [
     rw [hadd_zero,hzero_add]
   end
 
-#print axioms co_zip_of_co_unzip_ptwise
-
 theorem co_unzip_of_co_zip_ptwise {α β γ : Type _} [model binary_module α]  [model binary_module β] [model binary_module γ] (f : hom α γ) (g : hom β γ)  : (∀ a, (co_unzip (co_zip f g)).fst.val a = f.val a) ∧ (∀ b, (co_unzip (co_zip f g)).snd.val b = g.val b) :=
   begin
     split,
@@ -98,9 +94,8 @@ theorem co_unzip_of_co_zip_ptwise {α β γ : Type _} [model binary_module α]  
       dsimp [prod_fst,prod_snd, morphism.proj_fst, morphism.proj_snd],
       rw [fixed_elem_is_zero,g.property],
       dunfold vect.map,
-      let hz := add_zero (f.val a),
-      dsimp [binary_module.add,binary_module.zero] at hz,
-      rw [hz]
+      drefold binary_module.add _ _,
+      rw [binary_module.add_zero]
     },
     show ∀ (b : β), (co_unzip (co_zip f g)).snd.val b = g.val b, {
       intros b,
@@ -112,13 +107,10 @@ theorem co_unzip_of_co_zip_ptwise {α β γ : Type _} [model binary_module α]  
       dsimp [prod_fst,prod_snd, morphism.proj_fst, morphism.proj_snd],
       rw [fixed_elem_is_zero,f.property],
       dunfold vect.map,
-      let hz := zero_add (g.val b),
-      dsimp [binary_module.add,binary_module.zero] at hz,
-      rw [hz]
+      drefold binary_module.add _ _,
+      rw [binary_module.zero_add]
     }
   end
-
-#print axioms co_unzip_of_co_zip_ptwise
 
 end
 

@@ -1,5 +1,6 @@
 import algebra.theory
 import algebra.abelian
+import tactic.unirewrite
 
 /-
  * Basic operations and relations
@@ -65,6 +66,7 @@ definition has_binary_add (α : Type _) [premodel binary_module α] : has_add α
 definition has_binary_neg (α : Type _) [premodel binary_module α] : has_neg α := has_neg.mk id
 
 @[simp]
+protected
 lemma zero_add {α : Type _} [model binary_module α] : ∀ a, binary_module.add (binary_module.zero α) a = a :=
   begin
     intro a,
@@ -77,6 +79,7 @@ lemma zero_add {α : Type _} [model binary_module α] : ∀ a, binary_module.add
   end
 
 @[simp]
+protected
 lemma add_zero {α : Type _} [model binary_module α] : ∀ a, binary_module.add a (binary_module.zero α) = a :=
   begin
     intro a,
@@ -89,6 +92,7 @@ lemma add_zero {α : Type _} [model binary_module α] : ∀ a, binary_module.add
   end
 
 @[simp]
+protected
 lemma add_self {α : Type _} [model binary_module α] : ∀ a, binary_module.add a a = binary_module.zero α :=
   begin
     intro a,
@@ -101,6 +105,7 @@ lemma add_self {α : Type _} [model binary_module α] : ∀ a, binary_module.add
   end
 
 @[simp]
+protected
 lemma add_comm {α : Type _} [model binary_module α] : ∀ (a b : α), binary_module.add a b = binary_module.add b a :=
   begin
     intros a b,
@@ -112,6 +117,7 @@ lemma add_comm {α : Type _} [model binary_module α] : ∀ (a b : α), binary_m
   end
 
 @[simp]
+protected
 lemma add_assoc {α : Type _} [model binary_module α] : ∀ (a b c : α), binary_module.add (binary_module.add a b) c = binary_module.add a (binary_module.add b c) :=
   begin
     intros a b c,
@@ -121,8 +127,6 @@ lemma add_assoc {α : Type _} [model binary_module α] : ∀ (a b c : α), binar
     dunfold binary_module.add,
     assumption
   end
-
-#print axioms binary_module.add_assoc
 
 definition binary_abelian (α : Type _) [model binary_module α] : has_add_abelian α :=
 {
@@ -134,8 +138,6 @@ definition binary_abelian (α : Type _) [model binary_module α] : has_add_abeli
   add_comm := binary_module.add_comm,
   add_assoc := binary_module.add_assoc,
 }
-
-#print axioms binary_abelian
 
 --- The constant map at `zero` yields a morphism of binary modules.
 definition zero_morphism (α β : Type _) [model binary_module α] [model binary_module β] : morphism binary_module α β :=
@@ -155,9 +157,8 @@ definition zero_morphism (α β : Type _) [model binary_module α] [model binary
         dunfold vect.repeat,
         have : ∀ (b : β), vect.repeat b ((1 : ℕ).add 0) = vect.cons b vect.nil := λ _,rfl,
         rw [this],
-        let hz := @zero_add β _,
-        dunfold binary_module.add at hz,
-        rw [hz],
+        drefold binary_module.add _ _,
+        rw [binary_module.zero_add]
       }
     end
 }
@@ -177,9 +178,6 @@ definition unit_is_initial : model.is_initial binary_module unit :=
     end
 }
 
-#print axioms unit_is_initial
-
-
 --- The theory `binary_module` has a trivial initial model.
 instance has_trivial_init : model.has_trivial_init binary_module :=
 {
@@ -189,8 +187,6 @@ instance has_trivial_init : model.has_trivial_init binary_module :=
 --- The fixed element is always the zero.
 theorem fixed_elem_is_zero (α : Type _) [ha : model binary_module α] : @model.fixed_element binary_module binary_module.has_trivial_init α _ = @premodel.act binary_module α _ _ binary_module.ops.zero vect.nil :=
   model.fixed_const binary_module α binary_module.ops.zero
-
-#print axioms fixed_elem_is_zero
 
 end binary_module
 

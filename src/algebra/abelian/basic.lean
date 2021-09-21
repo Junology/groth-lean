@@ -70,10 +70,18 @@ lemma accum_zero : (∀ a, f a = 0) → ∀ (as : list α), accum f as = 0
     ... = f a : add_zero (f a)
     ... = 0 : h a
 
-#print axioms accum_zero
-
-#print axioms or.resolve_left
-
+@[simp]
+lemma accum_append (l₁ l₂ : list α) : accum f (l₁ ++ l₂) = accum f l₁ + accum f l₂ :=
+  begin
+    induction l₁ with a tl h_ind,
+    case nil {
+      rw [list.nil_append, accum_nil, zero_add],
+    },
+    case cons {
+      dsimp [list.append],
+      rw [h_ind, add_assoc],
+    }
+  end
 
 lemma accum_filter_zero {p : α → Prop} [decidable_pred p] : (∀ x, ¬p x → f x = 0) → ∀ (l : list α), accum f (l.filter p) = accum f l
 | _ [] := rfl
@@ -97,7 +105,6 @@ lemma accum_filter_zero {p : α → Prop} [decidable_pred p] : (∀ x, ¬p x →
         ... = accum f (a :: as) : rfl
     )
 
-
 lemma accum_perm {l₁ l₂ : list α} (hperm : list.perm l₁ l₂) : accum f l₁ = accum f l₂ :=
   list.perm.rec_on hperm
     /- perm.nil -/ rfl
@@ -114,6 +121,14 @@ lemma accum_perm {l₁ l₂ : list α} (hperm : list.perm l₁ l₂) : accum f l
     )
     /- perm.trans -/ (λ _ _ _ _ _, flip eq.trans)
 
-#print axioms accum_perm
+lemma accum_partition (p : α → Prop) [decidable_pred p] : ∀ (l : list α), accum f l = accum f (l.filter p) + accum f (l.filter (not∘ p)) :=
+  begin
+    intros l,
+    let hperm := list.perm.append_partition p l,
+    rw [list.partition_eq_filter_filter_safe] at hperm,
+    dsimp [function.uncurry] at hperm,
+    rw [←accum_perm hperm, ←accum_append],
+    refl
+  end
 
 end

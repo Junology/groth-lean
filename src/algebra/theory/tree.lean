@@ -15,9 +15,8 @@ namespace morphism
 
 -- maps into premodels give rise to morphisms out of trees
 definition treelift (th : theory) {α β: Type*} [premodel th β] (f : α → β) : morphism th (optree th.op α) β :=
-  ⟨optree.elim (@premodel.act th β _) f, by intros n μ ts; unfold premodel.act; rw [optree.elim_opnode]⟩
-
-#print axioms treelift
+  subtype.mk (optree.elim (@premodel.act th β _) f) $
+    by intros n μ ts; unfold premodel.act; rw [optree.elim_opnode]
 
 -- Computation rule for treelift; treelift preserves the original map
 theorem treelift_comp {th : theory} {α β: Type*} [premodel th β] (f : α → β) : ∀ {a : α}, (treelift th f).val (optree.varleaf a) = f a :=
@@ -26,8 +25,6 @@ theorem treelift_comp {th : theory} {α β: Type*} [premodel th β] (f : α → 
     dsimp [treelift],
     exact optree.elim_varleaf
   end
-
-#print axioms treelift_comp
 
 -- The embedding into a treemodel is "epimorphic"
 mutual theorem tree_unique, tree_unique_aux {th : theory} {α β : Type*} [premodel th β] {f g : morphism th (optree th.op α) β} (h : ∀ a, f.val (optree.varleaf a) = g.val (optree.varleaf a))
@@ -58,7 +55,5 @@ with tree_unique_aux : ∀ {n : ℕ} {ts : vect (optree th.op α) n}, vect.map f
     rw [tree_unique, tree_unique_aux],
     try {split; refl}
   end
-
-#print axioms tree_unique
 
 end morphism

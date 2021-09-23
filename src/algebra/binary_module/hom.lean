@@ -25,7 +25,7 @@ definition inv_is_morphism (α β : Type _) [model binary_module α] [model bina
         dsimp [vect.unzip_fam],
         rw [vect.map_const],
         let hfix := @model.fixed_op binary_module binary_module.has_trivial_init β _,
-        dsimp [model.fixed_element,model.has_trivial_init.init_unit,unit_is_initial,zero_morphism,binary_module.zero] at hfix,
+        dsimp [model.fixed_element,model.has_trivial_init.init_unit,unit_is_initial,morphism.zero,binary_module.zero] at hfix,
         rw [←hfix]
       },
       case ops.add {

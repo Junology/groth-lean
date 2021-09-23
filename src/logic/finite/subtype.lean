@@ -15,6 +15,11 @@ protected
 definition underlying {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) : list α :=
   l.val.map subtype.val
 
+--- Two `exhaustive_list`s on a subtype equal to each other precisely if their underlying `list`s do.
+protected
+lemma eq_of_underlying {α : Type _} {p : α → Prop} {l₁ l₂ : exhaustive_list (subtype p)} : l₁.underlying = l₂.underlying → l₁ = l₂ :=
+  λ h, subtype.eq (list.inj_of_map_inj subtype.val_injective h)
+
 protected
 lemma underlying_nodup {α : Type _} {p : α → Prop} (l : exhaustive_list (subtype p)) : l.underlying.nodup :=
   begin
@@ -80,6 +85,37 @@ lemma of_empty_underlying {α : Type _} {p : α → Prop} (h : ∀ a, ¬p a) (l 
     dunfold exhaustive_list.underlying,
     rw [l.is_empty h],
     refl
+  end
+
+--- `exhaustive_list` of singleton subset.
+protected
+definition singleton {α : Type _} [decidable_eq α] (a : α) : exhaustive_list {x // x=a} :=
+  subtype.mk [⟨a,rfl⟩] $
+    begin
+      split,
+      exact list.nodup.cons (list.not_mem_nil _) list.nodup.nil,
+      show ∀ x, _, {
+        intros x,
+        have : x = ⟨a,rfl⟩ := subtype.eq x.property,
+        rw [this],
+        exact list.mem_cons_self _ _
+      }
+    end
+
+--- The underlying `list` of `exhaustive_list` of singleton subtypes.
+protected
+lemma singleton_underlying {α : Type _} [decidable_eq α] {a : α} : (exhaustive_list.singleton a).underlying = [a] :=
+  rfl
+
+--- The uniqueness of `exhaustive_list` on singleton subtypes.
+protected
+lemma singleton_unique {α : Type _} [decidable_eq α] {a : α} : ∀ (l :exhaustive_list {x // x=a}), l = exhaustive_list.singleton a :=
+  begin
+    intros l,
+    apply exhaustive_list.eq_of_underlying,
+    have : list.perm l.underlying [a],
+      from l.underlying_perm (exhaustive_list.singleton a),
+    exact this.eq_singleton
   end
 
 --- `exhaustive_list`s of two subtypes classified by eqiuvalent predicators can be translated to one another.

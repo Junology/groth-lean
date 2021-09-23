@@ -139,8 +139,33 @@ definition binary_abelian (α : Type _) [model binary_module α] : has_add_abeli
   add_assoc := binary_module.add_assoc,
 }
 
+section arithm -- arithmetic rules
+
+local attribute [instance] binary_abelian
+
+lemma morphism.respect_zero {α β : Type _} [model binary_module α] [model binary_module β] (f : morphism binary_module α β) : f.val 0 = 0 :=
+  begin
+    unirewrite @has_zero.zero α _ with binary_module.zero α,
+    unirewrite @has_zero.zero β _ with binary_module.zero β,
+    dsimp [binary_module.zero],
+    rw [f.property ops.zero],
+    refl
+  end
+
+lemma morphism.respect_add {α β : Type _} [model binary_module α] [model binary_module β] (f : morphism binary_module α β) : ∀ x y, f.val (x+y) = f.val x + f.val y :=
+  begin
+    intros x y,
+    unirewrite @has_add.add α _ with binary_module.add,
+    unirewrite @has_add.add β _ with binary_module.add,
+    dsimp [binary_module.add],
+    rw [f.property ops.add],
+    refl
+  end
+
+end arithm
+
 --- The constant map at `zero` yields a morphism of binary modules.
-definition zero_morphism (α β : Type _) [model binary_module α] [model binary_module β] : morphism binary_module α β :=
+definition morphism.zero (α β : Type _) [model binary_module α] [model binary_module β] : morphism binary_module α β :=
 {
   val := λ _, binary_module.zero β,
   property :=
@@ -166,12 +191,12 @@ definition zero_morphism (α β : Type _) [model binary_module α] [model binary
 --- The trivial binary_module is an initial model.
 definition unit_is_initial : model.is_initial binary_module unit :=
 {
-  elim := λ β hb, @zero_morphism unit β _ hb,
+  elim := λ β hb, @morphism.zero unit β _ hb,
   hunique :=
     begin
       intros β mb g a,
       cases a,
-      dsimp [zero_morphism],
+      dsimp [morphism.zero],
       have : punit.star = @premodel.act binary_module unit _ 0 binary_module.ops.zero vect.nil := rfl,
       rw [this,g.property],
       refl

@@ -28,6 +28,27 @@ lemma map_equiv {α β : Type _} {f g : α → β} {l : list α} : (∀ x, f x =
     }
   end
 
+--- `map f` is injective provided so is `f`.
+lemma inj_of_map_inj {α β : Type _} {f : α → β} : function.injective f → function.injective (map f) :=
+  begin
+    intros hf l₁,
+    induction l₁ with a tl₁ h_ind,
+    case nil {
+      intros l₂ h; cases l₂ with b tl₂,
+      case nil { refl },
+      case cons { dsimp [map] at h; injection h }
+    },
+    case cons {
+      intros l₂ h; cases l₂ with b tl₂,
+      case nil { dsimp [map] at h; injection h },
+      case cons {
+        dsimp [map] at h,
+        let hfeq := cons.inj h,
+        rw [hf hfeq.left, h_ind hfeq.right]
+      }
+    }
+  end
+
 --- `filter` after `map` yields `map` of `filter`.
 lemma filter_of_map {α β : Type _} {f : α → β} {p : β → Prop} [decidable_pred p] {l : list α} : filter p (l.map f) = map f (l.filter (p∘ f)) :=
   begin
@@ -459,6 +480,32 @@ lemma symm {α : Sort _} {l₁ l₂ : list α} (hperm : perm l₁ l₂) : perm l
     (λ l₁ l₂ l₃ _ _ h₂ h₁, perm.trans h₁ h₂)
 
 protected
+lemma eq_nil {α : Type _} {l : list α} (hperm : perm l []) : l = [] :=
+  @perm.rec_on α (λl₁ l₂, l₂ = [] → l₁ = []) l [] hperm
+    (λ_, rfl)
+    (λ _ _ _ _ _ h, list.no_confusion h)
+    (λ _ _ _ h, list.no_confusion h)
+    (λ _ _ _ _ _ h_ind₁ h_ind₂, h_ind₂ ∘ h_ind₁)
+    rfl
+
+--- If a `l : list α` is `perm` to a singleton `[a]`, then `l = [a]`.
+protected
+lemma eq_singleton {α : Type _} {l : list α} {a : α} (hperm : perm l [a]) : l = [a] :=
+  @perm.rec_on α (λ l₁ l₂, l₂ = [a] → l₁ = [a]) l [a] hperm
+    (λ h, list.no_confusion h)
+    (λ b l₁ l₂ hp h_ind h,
+      begin
+        let h₂ := list.cons.inj h,
+        rw [h₂.right] at hp,
+        have : l₁ = [] := hp.eq_nil,
+        rw [h₂.left, this]
+      end
+    )
+    (λ b c l h, list.no_confusion (list.cons.inj h).right)
+    (λ _ _ _ _ _ h_ind₁ h_ind₂, h_ind₂ ∘ h_ind₁)
+    rfl
+
+protected
 lemma middle {α : Type _} {a : α} {l₁ l₂ : list α} : perm (l₁ ++ (a :: l₂)) (a :: (l₁ ++ l₂)) :=
   begin
     induction l₁ with b tl h_ind,
@@ -467,6 +514,18 @@ lemma middle {α : Type _} {a : α} {l₁ l₂ : list α} : perm (l₁ ++ (a :: 
       dsimp [list.append],
       exact perm.trans perm.head h_ind.cons
     }
+  end
+
+--- The relation `perm` yields the equality of lengths.
+protected
+lemma length {α : Type _} {l₁ l₂ : list α} : l₁.perm l₂ → l₁.length = l₂.length :=
+  begin
+    intros hperm,
+    induction hperm with _ _ _ _ h_ind a b _ _ _ _ _ _ hfyz hfxy,
+    case nil { refl },
+    case cons { dunfold length, rw [h_ind] },
+    case head { dunfold length, refl },
+    case trans { exact eq.trans hfxy hfyz }
   end
 
 --- `map f` repsects the relation `perm`.

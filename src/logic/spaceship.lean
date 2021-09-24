@@ -215,13 +215,9 @@ instance is_trans_of_is_trans {α : Type*} (r : α → α → Prop) [is_trans α
 
 namespace unsafe
 
+local attribute [instance] decidable_of_idecidable
 instance is_linear_of_is_strict_total_order {α : Type*} (r : α → α → Prop) [is_strict_total_order α r] : spaceship.is_linear α (cmp_using r) :=
   { /- auto generated -/ }
 
 end unsafe
-
-#print axioms is_antisymm_of_is_trichotomous
-#print axioms is_refl_of_is_irrefl
-#print axioms is_trans_of_is_trans
-#print axioms unsafe.is_linear_of_is_strict_total_order
 

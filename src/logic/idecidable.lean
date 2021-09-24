@@ -8,6 +8,10 @@ definition is_binary (p : Prop) : Prop := p ∨ ¬p
 class idecidable (p : Prop) : Prop :=
   (is_either : is_binary p)
 
+@[reducible]
+definition idecidable_pred {α : Sort _} (p : α → Prop) :=
+  ∀ a, idecidable (p a)
+
 --- Class of types that has internally decidable equality.
 @[reducible]
 definition idecidable_eq (α : Sort _) : Prop := ∀ (a b : α), idecidable (a=b)

@@ -58,15 +58,11 @@ definition xor_congr {p q p' q' : Prop} : (p ↔ p') → (q ↔ q') → (xor p q
     apply or_congr; apply and_congr; try { assumption },
   end
 
-#print axioms xor_congr
-
 definition xor_self (p : Prop) : xor p p ↔ false :=
   begin
     split; intros h; try { contradiction },
     apply or.elim h; try { exact (and_not_self p).mp }
   end
-
-#print axioms xor_self
 
 definition xor_comm (p q : Prop) : xor p q ↔ xor q p :=
   begin
@@ -95,11 +91,6 @@ definition xor_false (p : Prop) : xor p false ↔ p :=
         ↔ xor false p : xor_comm p false
     ... ↔ p : false_xor p
 
-#print axioms false_xor
-#print axioms xor_false
-
-#check or_assoc
-
 lemma not_or_distrib {p q : Prop} : ¬(p∨q) ↔ (¬p)∧(¬q) :=
   begin
     constructor,
@@ -115,26 +106,17 @@ lemma not_or_distrib {p q : Prop} : ¬(p∨q) ↔ (¬p)∧(¬q) :=
     },
   end
 
-#print axioms not_or_distrib
-
-#check or_iff_left_of_imp
-
 lemma and_iff_left_of_imp {p q : Prop} : (p → q) → (p ∧ q ↔ p) :=
   λ hpq, iff.intro and.left (λ hp, ⟨hp,hpq hp⟩)
 
 lemma and_iff_right_of_imp {p q : Prop} : (q → p) → (p ∧ q ↔ q) :=
   λ hqp, iff.intro and.right (λ hq, ⟨hqp hq, hq⟩)
 
-#print axioms and_iff_left_of_imp
-#print axioms and_iff_right_of_imp
-
 lemma or_disproof_left {p q : Prop} (hnp : ¬p) : (p ∨ q) ↔ q :=
   iff.intro (or.rec (by intro; contradiction) id) or.inr
 
 lemma or_disproof_right {p q : Prop} (hnp : ¬p) : (q∨ p) ↔ q :=
   iff.intro (or.rec id (by intro; contradiction)) or.inl
-
-#print axioms or_disproof_left
 
 lemma or_and_distrib {p q r : Prop} : (p ∨ q) ∧ r ↔ (p ∧ r) ∨ (q ∧ r) :=
 {
@@ -149,8 +131,6 @@ lemma or_and_distrib {p q r : Prop} : (p ∨ q) ∧ r ↔ (p ∧ r) ∨ (q ∧ r
         (λ hpr, ⟨or.inl hpr.left, hpr.right⟩)
         (λ hqr, ⟨or.inr hqr.left, hqr.right⟩)
 }
-
-#print axioms or_and_distrib
 
 --- The equality on Σ-type from equality and heterogeneous equality.
 lemma sigma_eq_heq {α : Sort _} {β : α → Sort _} : ∀ {x y : sigma β}, x.fst = y.fst → x.snd == y.snd → x = y

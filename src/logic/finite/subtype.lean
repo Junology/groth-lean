@@ -356,4 +356,45 @@ lemma of_union {α : Type _} [decidable_eq α] {p q : α → Prop} : is_finite (
     exact is_finite.of_exhaustive_list (lp.union lq)
   end
 
+--- Every finite subtype of a subtype is internally-decidable in the superset.
+lemma idec_in_super {α : Type _} [decidable_eq α] {p : α → Prop} {q : subtype p → Prop} : is_finite {x : subtype p // q x} → ∀ (a : α), idecidable (∃ (h : p a), q ⟨a,h⟩) :=
+  begin
+    intros hfin a,
+    constructor,
+    cases @is_finite.has_exhaustive_list _ hfin with l,
+    let l' := l.underlying.filter (λ (x : subtype p), x.val = a),
+    cases list.decidable_eq l' [],
+    case is_false {
+      left,
+      cases hl: l' with x tl,
+      case nil { rw [hl] at h, exfalso, exact h rfl },
+      have hx : x ∈ l.underlying ∧ x.val = a, {
+        let hxl := list.mem_cons_self x tl,
+        rw [←hl] at hxl,
+        exact (list.mem_filter x).mp hxl
+      },
+      have hqx : q x,
+        from (l.underlying_mem_iff x).mpr hx.left,
+      cases hx.right,
+      existsi x.property,
+      rw [←subtype.eta x x.property] at hqx,
+      exact hqx,
+    },
+    case is_true {
+      right; intro hq; cases hq with hpa hqa,
+      let x := @subtype.mk α p a hpa,
+      have : x ∈ l', {
+        apply (list.mem_filter x).mpr,
+        split,
+        show x.val = a, by trivial,
+        show x ∈ l.underlying, {
+          apply (l.underlying_mem_iff x).mp,
+          exact hqa
+        }
+      },
+      rw [h] at this,
+      exact list.not_mem_nil x this
+    }
+  end
+
 end is_finite

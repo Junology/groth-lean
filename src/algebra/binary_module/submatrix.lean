@@ -11,6 +11,7 @@ local attribute [instance] binary_abelian
 definition submatrix {m n : ℕ} (p : finord m → Prop) (q : finord n → Prop) : Type _ :=
   {a : finord m → subtype q → bool // ∀ i y, a i y ≠ 0 → p i}
 
+
 namespace submatrix
 
 variables {m n : ℕ} {p : finord m → Prop} {q : finord n → Prop}
@@ -69,6 +70,68 @@ noncomputable definition mk_mat (f : subtype q → finsupp_bits (subtype p)) : s
       }
     end
 }
+
+--- The representation matrix of a function defined from a matrix is exactly the original one.
+lemma mat_of_to_fun (a : submatrix p q) : mk_mat a.to_fun = a :=
+  begin
+    apply subtype.eq,
+    dsimp [mk_mat],
+    funext,
+    cases @whether _ (support_idec a.to_fun y i) with hpi hnpi,
+    case or.inl {
+      rw [@unsafe.dec_of_idec_pos _ (support_idec _ _ _) hpi],
+      dsimp *,
+      symmetry,
+      cases hpi with hpi hai,
+      dsimp [to_fun] at hai,
+      exact (neq_ff_iff _).mp hai,
+    },
+    case or.inr {
+      rw [@unsafe.dec_of_idec_neg _ (support_idec _ _ _) hnpi],
+      dsimp *,
+      symmetry,
+      dsimp [to_fun] at hnpi,
+      cases haiy: a.val i y,
+      case ff { refl },
+      case tt {
+        exfalso; apply hnpi; clear hnpi,
+        existsi a.property i y ((neq_ff_iff _).mpr haiy),
+        rw [haiy],
+        intro h; injection h,
+      }
+    }
+  end
+
+--- The function defined from a representation matrix is exactly the original one.
+lemma to_fun_of_mat (f : subtype q → finsupp_bits (subtype p)) : (mk_mat f).to_fun = f :=
+  begin
+    funext y,
+    apply subtype.eq,
+    funext x,
+    dsimp [mk_mat, to_fun],
+    cases @whether _ (support_idec f y x.val) with hp hnp,
+    case or.inl {
+      rw [@unsafe.dec_of_idec_pos _ (support_idec _ _ _) hp],
+      dsimp *,
+      symmetry,
+      cases hp with hpx hfy,
+      rw [subtype.eta x hpx] at hfy,
+      exact (neq_ff_iff _).mp hfy
+    },
+    case or.inr {
+      rw [@unsafe.dec_of_idec_neg _ (support_idec _ _ _) hnp],
+      dsimp *,
+      symmetry,
+      cases hfy: (f y).val x,
+      case ff { refl },
+      case tt {
+        exfalso; apply hnp; clear hnp,
+        existsi x.property,
+        rw [subtype.eta x x.property],
+        exact (neq_ff_iff _).mpr hfy,
+      }
+    }
+  end
 
 end unsafe
 

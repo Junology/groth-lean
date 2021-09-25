@@ -48,7 +48,7 @@ lemma underlying_mem_iff {α : Type _} {p : α → Prop} (l : exhaustive_list (s
       intros hx,
       dunfold exhaustive_list.underlying at hx,
       cases l.val.inverse_of_mem_map hx with w hw,
-      rw [hw]; exact w.property
+      rw [hw.left]; exact w.property
     }
   end
 
@@ -357,44 +357,87 @@ lemma of_union {α : Type _} [decidable_eq α] {p q : α → Prop} : is_finite (
   end
 
 --- Every finite subtype of a subtype is internally-decidable in the superset.
-lemma idec_in_super {α : Type _} [decidable_eq α] {p : α → Prop} {q : subtype p → Prop} : is_finite {x : subtype p // q x} → ∀ (a : α), idecidable (∃ (h : p a), q ⟨a,h⟩) :=
+lemma idec_in_super {α : Type _} [decidable_eq α] {p : α → Prop} {q : subtype p → Prop} : is_finite (subtype q) → ∀ (a : α), idecidable (∃ (h : p a), q ⟨a,h⟩) :=
   begin
     intros hfin a,
     constructor,
     cases @is_finite.has_exhaustive_list _ hfin with l,
-    let l' := l.underlying.filter (λ (x : subtype p), x.val = a),
-    cases list.decidable_eq l' [],
-    case is_false {
-      left,
-      cases hl: l' with x tl,
-      case nil { rw [hl] at h, exfalso, exact h rfl },
-      have hx : x ∈ l.underlying ∧ x.val = a, {
-        let hxl := list.mem_cons_self x tl,
-        rw [←hl] at hxl,
-        exact (list.mem_filter x).mp hxl
-      },
+    refine dite (a ∈ l.underlying.map subtype.val) _ _,
+    show a ∈ _ → _, {
+      intros ha; left,
+      let ha' := list.inverse_of_mem_map _ ha,
+      cases hha: ha' with x hxa; clear hha,
       have hqx : q x,
-        from (l.underlying_mem_iff x).mpr hx.left,
-      cases hx.right,
-      existsi x.property,
-      rw [←subtype.eta x x.property] at hqx,
-      exact hqx,
+        from (l.underlying_mem_iff x).mpr hxa.right,
+      have hpa : p a,
+        from hxa.left.symm ▸ x.property,
+      have : x = ⟨a,hpa⟩,
+        from subtype.eq hxa.left.symm,
+      rw [this] at hqx,
+      exact ⟨hpa,hqx⟩
     },
-    case is_true {
-      right; intro hq; cases hq with hpa hqa,
-      let x := @subtype.mk α p a hpa,
-      have : x ∈ l', {
-        apply (list.mem_filter x).mpr,
-        split,
-        show x.val = a, by trivial,
-        show x ∈ l.underlying, {
-          apply (l.underlying_mem_iff x).mp,
-          exact hqa
-        }
-      },
-      rw [h] at this,
-      exact list.not_mem_nil x this
+    show a ∉ _ → _, {
+      intros ha; right,
+      intros h; cases h with hpa hqa,
+      let x : subtype p := ⟨a,hpa⟩,
+      have : x ∈ l.underlying,
+        from (l.underlying_mem_iff x).mp hqa,
+      have: x.val ∈ list.map subtype.val l.underlying,
+        from l.underlying.mem_map_of_mem x this,
+      exact ha this
     }
+  end
+
+--- Every subtype of a subtype that is decidable in a finite supertype is finite.
+lemma is_finite_of_superdec {α : Type _} [decidable_eq α] [is_finite α] {p : α → Prop} {q : subtype p → Prop} [∀ (a : α), decidable (∃ (h : p a), q ⟨a,h⟩)] : is_finite (subtype q) :=
+  begin
+    cases is_finite.has_exhaustive_list α with l,
+    apply is_finite.of_exhaustive_list,
+    let l' := l.restrict (λ a, ∃ (h : p a), q ⟨a,h⟩),
+    have : ∀ a, (∃ h, q ⟨a,h⟩) ↔ (p a ∧ ∀ h, q ⟨a,h⟩), {
+      intros a,
+      split,
+      show (∃ h, q ⟨a,h⟩) → _, {
+        intros hh; cases hh with hpa hqa,
+        refine and.intro hpa _,
+        intro h,
+        have : h = hpa, from rfl,
+        rw [this],
+        exact hqa
+      },
+      show (p a ∧ ∀ h, q ⟨a,h⟩) → _, {
+        intros hpqa,
+        exact ⟨hpqa.left, hpqa.right hpqa.left⟩
+      }
+    },
+    let l'' := l'.of_iff this,
+    let f : {a // p a ∧ ∀ h, q ⟨a,h⟩} → subtype q :=
+      λ x, subtype.mk ⟨x.val, x.property.left⟩ $
+        x.property.right x.property.left,
+    have : function.bijective f, {
+      split,
+      show function.injective f, {
+        intros x y,
+        dsimp [f],
+        intros hxy,
+        let hxy' := congr_arg (subtype.val∘subtype.val) hxy,
+        dsimp * at hxy',
+        apply subtype.eq; exact hxy'
+      },
+      show function.surjective f, {
+        intros z,
+        let hqa := z.property,
+        rw [←subtype.eta z.val z.val.property] at hqa,
+        let x : {a // p a ∧ ∀ h, q ⟨a,h⟩} :=
+          subtype.mk z.val.val
+            (and.intro z.val.property (λ h, hqa)),
+        existsi x,
+        dsimp [f],
+        apply subtype.eq; apply subtype.eq,
+        dsimp *; refl
+      }
+    },
+    exact l''.translate this
   end
 
 end is_finite

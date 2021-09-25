@@ -268,7 +268,7 @@ lemma not_mem_map_of_offimage {α β : Type _} {f : α → β} (y : β) : (∀ x
   λ h, or.elim h (λ h, hy a h.symm) (not_mem_map_of_offimage hy)
 
 --- If `y` is a member of `map f l`, then `y` can be written in the form `y = f x` with `x ∈ l`.
-lemma inverse_of_mem_map {α β : Type _} {f : α → β} {y : β} (l : list α) : y ∈ map f l → ∃ x, y = f x :=
+lemma inverse_of_mem_map {α β : Type _} {f : α → β} {y : β} (l : list α) : y ∈ map f l → ∃ x, y = f x ∧ x ∈ l :=
   begin
     induction l with a tl h_ind,
     case nil {
@@ -279,8 +279,11 @@ lemma inverse_of_mem_map {α β : Type _} {f : α → β} {y : β} (l : list α)
       dunfold map,
       intros hy,
       cases hy,
-      case or.inl { exact ⟨a,hy⟩ },
-      case or.inr { exact h_ind hy },
+      case or.inl { exact ⟨a,hy,list.mem_cons_self a _⟩ },
+      case or.inr {
+        refine exists_imp_exists _ (h_ind hy),
+        intros x; refine and_implies id (mem_cons_of_mem a)
+      }
     }
   end
 
